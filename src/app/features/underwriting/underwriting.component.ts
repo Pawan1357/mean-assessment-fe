@@ -8,6 +8,8 @@ import { PropertyStoreService } from '../../core/state/property-store.service';
   styleUrls: ['./underwriting.component.css'],
 })
 export class UnderwritingComponent {
+  actionError = '';
+
   readonly assumptionsFields: Array<{ label: string; key: keyof UnderwritingInputs; type: 'number' | 'date' }> = [
     { label: 'List Price', key: 'listPrice', type: 'number' },
     { label: 'Bid', key: 'bid', type: 'number' },
@@ -32,11 +34,26 @@ export class UnderwritingComponent {
   constructor(public readonly store: PropertyStoreService) {}
 
   onAddTenant() {
-    this.store.addTenant();
+    this.actionError = '';
+    this.store.addTenantDraft();
   }
 
   onDeleteTenant(tenantId: string) {
-    this.store.deleteTenant(tenantId);
+    this.actionError = '';
+    this.store.deleteTenant(tenantId).subscribe({
+      error: (error: unknown) => {
+        this.actionError = error instanceof Error ? error.message : 'Failed to delete tenant';
+      },
+    });
+  }
+
+  onSaveTenant(tenantId: string) {
+    this.actionError = '';
+    this.store.saveTenant(tenantId).subscribe({
+      error: (error: unknown) => {
+        this.actionError = error instanceof Error ? error.message : 'Failed to save tenant';
+      },
+    });
   }
 
   onUnderwritingFieldChange(key: keyof UnderwritingInputs, event: Event) {

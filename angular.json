@@ -23,7 +23,8 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "assessment-frontend:build"
+            "buildTarget": "assessment-frontend:build",
+            "proxyConfig": "proxy.conf.json"
           }
         },
         "test": {

@@ -18,86 +18,92 @@
 <section class="card" *ngIf="store.property$ | async as property">
   <div class="section-head">
     <h2>Tenants</h2>
-    <button type="button" (click)="onAddTenant()">Add Tenant</button>
+    <button type="button" class="btn btn-soft" (click)="onAddTenant()">Add Tenant</button>
   </div>
+  <div class="inline-error" *ngIf="actionError">{{ actionError }}</div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Tenant Name</th>
-        <th>Credit Type</th>
-        <th>Sq Feet</th>
-        <th>Rent PSF</th>
-        <th>Ann. Esc</th>
-        <th>Lease Start</th>
-        <th>Lease End</th>
-        <th>Lease Type</th>
-        <th>Renew</th>
-        <th>Downtime</th>
-        <th>TI PSF</th>
-        <th>LC PSF</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let tenant of property.tenants">
-        <ng-container *ngIf="!tenant.isDeleted || tenant.isVacant">
-          <td>
-            <input
-              [disabled]="tenant.isVacant || tenant.isDeleted"
-              [value]="tenant.tenantName"
-              (change)="onTenantFieldChange(tenant, 'tenantName', $event)"
-            />
-          </td>
-          <td>
-            <select
-              [disabled]="tenant.isVacant || tenant.isDeleted"
-              [value]="tenant.creditType"
-              (change)="onTenantFieldChange(tenant, 'creditType', $event)"
-            >
-              <option>National</option>
-              <option>Regional</option>
-              <option>Local</option>
-              <option>N/A</option>
-            </select>
-          </td>
-          <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.squareFeet" (change)="onTenantFieldChange(tenant, 'squareFeet', $event)" /></td>
-          <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.rentPsf" (change)="onTenantFieldChange(tenant, 'rentPsf', $event)" /></td>
-          <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.annualEscalations" (change)="onTenantFieldChange(tenant, 'annualEscalations', $event)" /></td>
-          <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="date" [value]="tenant.leaseStart | date : 'yyyy-MM-dd'" (change)="onTenantFieldChange(tenant, 'leaseStart', $event)" /></td>
-          <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="date" [value]="tenant.leaseEnd | date : 'yyyy-MM-dd'" (change)="onTenantFieldChange(tenant, 'leaseEnd', $event)" /></td>
-          <td>
-            <select
-              [disabled]="tenant.isVacant || tenant.isDeleted"
-              [value]="tenant.leaseType"
-              (change)="onTenantFieldChange(tenant, 'leaseType', $event)"
-            >
-              <option>NNN</option>
-              <option>Gross</option>
-              <option>Modified Gross</option>
-              <option>N/A</option>
-            </select>
-          </td>
-          <td>
-            <select
-              [disabled]="tenant.isVacant || tenant.isDeleted"
-              [value]="tenant.renew"
-              (change)="onTenantFieldChange(tenant, 'renew', $event)"
-            >
-              <option>Yes</option>
-              <option>No</option>
-              <option>Maybe</option>
-              <option>N/A</option>
-            </select>
-          </td>
-          <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.downtimeMonths" (change)="onTenantFieldChange(tenant, 'downtimeMonths', $event)" /></td>
-          <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.tiPsf" (change)="onTenantFieldChange(tenant, 'tiPsf', $event)" /></td>
-          <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.lcPsf" (change)="onTenantFieldChange(tenant, 'lcPsf', $event)" /></td>
-          <td>
-            <button type="button" class="danger" [disabled]="tenant.isVacant || tenant.isDeleted" (click)="onDeleteTenant(tenant.id)">Delete</button>
-          </td>
-        </ng-container>
-      </tr>
-    </tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Tenant Name</th>
+          <th>Credit Type</th>
+          <th>Sq Feet</th>
+          <th>Rent PSF</th>
+          <th>Ann. Esc</th>
+          <th>Lease Start</th>
+          <th>Lease End</th>
+          <th>Lease Type</th>
+          <th>Renew</th>
+          <th>Downtime</th>
+          <th>TI PSF</th>
+          <th>LC PSF</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tenant of property.tenants">
+          <ng-container *ngIf="!tenant.isDeleted || tenant.isVacant">
+            <td>
+              <input
+                [disabled]="tenant.isVacant || tenant.isDeleted"
+                [value]="tenant.tenantName"
+                (change)="onTenantFieldChange(tenant, 'tenantName', $event)"
+              />
+            </td>
+            <td>
+              <select
+                [disabled]="tenant.isVacant || tenant.isDeleted"
+                [value]="tenant.creditType"
+                (change)="onTenantFieldChange(tenant, 'creditType', $event)"
+              >
+                <option>National</option>
+                <option>Regional</option>
+                <option>Local</option>
+                <option>N/A</option>
+              </select>
+            </td>
+            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.squareFeet" (change)="onTenantFieldChange(tenant, 'squareFeet', $event)" /></td>
+            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.rentPsf" (change)="onTenantFieldChange(tenant, 'rentPsf', $event)" /></td>
+            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.annualEscalations" (change)="onTenantFieldChange(tenant, 'annualEscalations', $event)" /></td>
+            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="date" [value]="tenant.leaseStart | date : 'yyyy-MM-dd'" (change)="onTenantFieldChange(tenant, 'leaseStart', $event)" /></td>
+            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="date" [value]="tenant.leaseEnd | date : 'yyyy-MM-dd'" (change)="onTenantFieldChange(tenant, 'leaseEnd', $event)" /></td>
+            <td>
+              <select
+                [disabled]="tenant.isVacant || tenant.isDeleted"
+                [value]="tenant.leaseType"
+                (change)="onTenantFieldChange(tenant, 'leaseType', $event)"
+              >
+                <option>NNN</option>
+                <option>Gross</option>
+                <option>Modified Gross</option>
+                <option>N/A</option>
+              </select>
+            </td>
+            <td>
+              <select
+                [disabled]="tenant.isVacant || tenant.isDeleted"
+                [value]="tenant.renew"
+                (change)="onTenantFieldChange(tenant, 'renew', $event)"
+              >
+                <option>Yes</option>
+                <option>No</option>
+                <option>Maybe</option>
+                <option>N/A</option>
+              </select>
+            </td>
+            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.downtimeMonths" (change)="onTenantFieldChange(tenant, 'downtimeMonths', $event)" /></td>
+            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.tiPsf" (change)="onTenantFieldChange(tenant, 'tiPsf', $event)" /></td>
+            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.lcPsf" (change)="onTenantFieldChange(tenant, 'lcPsf', $event)" /></td>
+            <td>
+              <div class="actions-cell">
+                <button type="button" class="btn btn-primary" [disabled]="tenant.isVacant || tenant.isDeleted" (click)="onSaveTenant(tenant.id)">Save</button>
+                <button type="button" class="btn btn-danger" [disabled]="tenant.isVacant || tenant.isDeleted" (click)="onDeleteTenant(tenant.id)">Delete</button>
+              </div>
+            </td>
+          </ng-container>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </section>

@@ -1,5 +1,6 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { switchMap } from 'rxjs';
 import { PropertyStoreService } from '../../core/state/property-store.service';
 
 @Component({
@@ -14,7 +15,15 @@ export class ShellComponent implements OnInit {
   constructor(public readonly store: PropertyStoreService) {}
 
   ngOnInit(): void {
-    forkJoin([this.store.loadVersions(), this.store.loadVersion()]).subscribe({
+    this.store
+      .loadVersions()
+      .pipe(
+        switchMap((versions) => {
+          const selected = versions.find((item) => !item.isHistorical)?.version ?? versions[0]?.version ?? '1.1';
+          return this.store.loadVersion(selected);
+        }),
+      )
+      .subscribe({
       error: (error: unknown) => {
         this.errorMessage = this.extractErrorMessage(error);
       },
@@ -76,6 +85,18 @@ export class ShellComponent implements OnInit {
   }
 
   private extractErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const backendMessage =
+        typeof error.error === 'object' && error.error !== null && 'message' in error.error
+          ? String((error.error as { message: unknown }).message)
+          : '';
+
+      if (backendMessage) {
+        return backendMessage;
+      }
+      return error.message || `HTTP ${error.status}`;
+    }
+
     if (error instanceof Error) {
       return error.message;
     }

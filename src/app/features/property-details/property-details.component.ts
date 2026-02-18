@@ -8,6 +8,8 @@ import { PropertyStoreService } from '../../core/state/property-store.service';
   styleUrls: ['./property-details.component.css'],
 })
 export class PropertyDetailsComponent {
+  actionError = '';
+
   readonly leftInfoFields: Array<{ label: string; key: keyof PropertyDetails }> = [
     { label: 'Market', key: 'market' },
     { label: 'Sub Market', key: 'subMarket' },
@@ -47,11 +49,26 @@ export class PropertyDetailsComponent {
   constructor(public readonly store: PropertyStoreService) {}
 
   onAddBroker() {
-    this.store.addBroker();
+    this.actionError = '';
+    this.store.addBrokerDraft();
   }
 
   onDeleteBroker(brokerId: string) {
-    this.store.deleteBroker(brokerId);
+    this.actionError = '';
+    this.store.deleteBroker(brokerId).subscribe({
+      error: (error: unknown) => {
+        this.actionError = error instanceof Error ? error.message : 'Failed to delete broker';
+      },
+    });
+  }
+
+  onSaveBroker(brokerId: string) {
+    this.actionError = '';
+    this.store.saveBroker(brokerId).subscribe({
+      error: (error: unknown) => {
+        this.actionError = error instanceof Error ? error.message : 'Failed to save broker';
+      },
+    });
   }
 
   onBrokerFieldChange(broker: Broker, key: keyof Broker, event: Event) {

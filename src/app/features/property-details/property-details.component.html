@@ -25,8 +25,9 @@
     <section class="card">
       <div class="section-head">
         <h3>Broker Info</h3>
-        <button type="button" (click)="onAddBroker()">+ Add</button>
+        <button type="button" class="btn btn-soft" (click)="onAddBroker()">+ Add</button>
       </div>
+      <div class="inline-error" *ngIf="actionError">{{ actionError }}</div>
 
       <table>
         <thead>
@@ -45,7 +46,10 @@
               <td><input [value]="broker.phone" (change)="onBrokerFieldChange(broker, 'phone', $event)" /></td>
               <td><input [value]="broker.email" (change)="onBrokerFieldChange(broker, 'email', $event)" /></td>
               <td><input [value]="broker.company" (change)="onBrokerFieldChange(broker, 'company', $event)" /></td>
-              <td><button type="button" class="danger" (click)="onDeleteBroker(broker.id)">Delete</button></td>
+              <td class="actions-cell">
+                <button type="button" class="btn btn-primary" (click)="onSaveBroker(broker.id)">Save</button>
+                <button type="button" class="btn btn-danger" (click)="onDeleteBroker(broker.id)">Delete</button>
+              </td>
             </ng-container>
           </tr>
         </tbody>

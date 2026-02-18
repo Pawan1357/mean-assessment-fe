@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of, throwError, tap } from 'rxjs';
 import { Broker, PropertyVersion, Tenant } from '../models/property.model';
 import { PropertyApiService } from '../services/property-api.service';
 import { validatePropertyDraft } from '../validators/property-validation.util';
@@ -13,6 +13,7 @@ interface VersionOption {
 @Injectable({ providedIn: 'root' })
 export class PropertyStoreService {
   private readonly propertyId = 'property-1';
+  private persistedProperty: PropertyVersion | null = null;
 
   private readonly propertySubject = new BehaviorSubject<PropertyVersion | null>(null);
   private readonly versionsSubject = new BehaviorSubject<VersionOption[]>([]);
@@ -29,8 +30,11 @@ export class PropertyStoreService {
   loadVersion(version = '1.1') {
     return this.api.getVersion(this.propertyId, version).pipe(
       tap((property) => {
-        this.propertySubject.next(property);
+        const normalized = this.normalizePropertySnapshot(property);
+        this.persistedProperty = structuredClone(normalized);
+        this.propertySubject.next(normalized);
         this.validationErrorsSubject.next([]);
+        this.refreshDirtyState();
       }),
     );
   }
@@ -46,7 +50,7 @@ export class PropertyStoreService {
     }
     const nextDraft = mutator(structuredClone(current));
     this.propertySubject.next(nextDraft);
-    this.dirtySubject.next(true);
+    this.refreshDirtyState();
   }
 
   updatePropertyDetailsField<K extends keyof PropertyVersion['propertyDetails']>(key: K, value: PropertyVersion['propertyDetails'][K]) {
@@ -72,9 +76,9 @@ export class PropertyStoreService {
     }));
   }
 
-  addBroker() {
+  addBrokerDraft() {
     const broker: Broker = {
-      id: this.generateId('broker'),
+      id: this.generateId('temp-broker'),
       name: '',
       phone: '',
       email: '',
@@ -95,21 +99,66 @@ export class PropertyStoreService {
     }));
   }
 
-  deleteBroker(brokerId: string) {
-    this.patchDraft((draft) => ({
-      ...draft,
-      brokers: draft.brokers.map((broker) =>
-        broker.id === brokerId
-          ? {
-              ...broker,
-              isDeleted: true,
-            }
-          : broker,
-      ),
-    }));
+  deleteBroker(brokerId: string): Observable<PropertyVersion> {
+    const current = this.propertySubject.value;
+    if (!current) {
+      return throwError(() => new Error('Property not loaded'));
+    }
+
+    if (this.isTempId(brokerId)) {
+      this.patchDraft((draft) => ({
+        ...draft,
+        brokers: draft.brokers.filter((broker) => broker.id !== brokerId),
+      }));
+      return of(current);
+    }
+
+    const broker = current.brokers.find((candidate) => candidate.id === brokerId);
+    if (!broker || broker.isDeleted) {
+      return throwError(() => new Error('Broker not found'));
+    }
+
+    return this.api.softDeleteBroker(this.propertyId, current.version, brokerId, current.revision).pipe(
+      tap((saved) => {
+        this.persistCollectionUpdate(saved, 'brokers');
+      }),
+    );
   }
 
-  addTenant() {
+  saveBroker(brokerId: string): Observable<PropertyVersion> {
+    const current = this.propertySubject.value;
+    if (!current) {
+      return throwError(() => new Error('Property not loaded'));
+    }
+
+    const broker = current.brokers.find((candidate) => candidate.id === brokerId);
+    if (!broker) {
+      return throwError(() => new Error('Broker not found in draft'));
+    }
+
+    const payload = {
+      name: broker.name?.trim(),
+      phone: broker.phone?.trim(),
+      email: broker.email?.trim(),
+      company: broker.company?.trim(),
+    };
+
+    if (!payload.name || !payload.phone || !payload.email || !payload.company) {
+      return throwError(() => new Error('Broker name, phone, email and company are required'));
+    }
+
+    const request$ = this.isTempId(brokerId)
+      ? this.api.createBroker(this.propertyId, current.version, current.revision, payload)
+      : this.api.updateBroker(this.propertyId, current.version, brokerId, current.revision, payload);
+
+    return request$.pipe(
+      tap((saved) => {
+        this.persistCollectionUpdate(saved, 'brokers');
+      }),
+    );
+  }
+
+  addTenantDraft() {
     const current = this.propertySubject.value;
     if (!current) {
       return;
@@ -120,7 +169,7 @@ export class PropertyStoreService {
     leaseEnd.setFullYear(leaseEnd.getFullYear() + 1);
 
     const tenant: Tenant = {
-      id: this.generateId('tenant'),
+      id: this.generateId('temp-tenant'),
       tenantName: '',
       creditType: 'Local',
       squareFeet: 0,
@@ -143,6 +192,44 @@ export class PropertyStoreService {
     }));
   }
 
+  addTenant() {
+    this.addTenantDraft();
+  }
+
+  addBroker() {
+    this.addBrokerDraft();
+  }
+
+  deleteTenant(tenantId: string): Observable<PropertyVersion> {
+    const current = this.propertySubject.value;
+    if (!current) {
+      return throwError(() => new Error('Property not loaded'));
+    }
+
+    if (tenantId === 'vacant-row') {
+      return throwError(() => new Error('Vacant row is system-managed and cannot be modified directly'));
+    }
+
+    if (this.isTempId(tenantId)) {
+      this.patchDraft((draft) => ({
+        ...draft,
+        tenants: draft.tenants.filter((tenant) => tenant.id !== tenantId),
+      }));
+      return of(current);
+    }
+
+    const tenant = current.tenants.find((candidate) => candidate.id === tenantId);
+    if (!tenant || tenant.isDeleted || tenant.isVacant) {
+      return throwError(() => new Error('Tenant not found'));
+    }
+
+    return this.api.softDeleteTenant(this.propertyId, current.version, tenantId, current.revision).pipe(
+      tap((saved) => {
+        this.persistCollectionUpdate(saved, 'tenants');
+      }),
+    );
+  }
+
   updateTenantField<K extends keyof Tenant>(tenantId: string, key: K, value: Tenant[K]) {
     this.patchDraft((draft) => ({
       ...draft,
@@ -152,18 +239,49 @@ export class PropertyStoreService {
     }));
   }
 
-  deleteTenant(tenantId: string) {
-    this.patchDraft((draft) => ({
-      ...draft,
-      tenants: draft.tenants.map((tenant) =>
-        tenant.id === tenantId && !tenant.isVacant
-          ? {
-              ...tenant,
-              isDeleted: true,
-            }
-          : tenant,
-      ),
-    }));
+  saveTenant(tenantId: string): Observable<PropertyVersion> {
+    const current = this.propertySubject.value;
+    if (!current) {
+      return throwError(() => new Error('Property not loaded'));
+    }
+
+    if (tenantId === 'vacant-row') {
+      return throwError(() => new Error('Vacant row is system-managed and cannot be modified directly'));
+    }
+
+    const tenant = current.tenants.find((candidate) => candidate.id === tenantId);
+    if (!tenant) {
+      return throwError(() => new Error('Tenant not found in draft'));
+    }
+
+    const payload = {
+      tenantName: tenant.tenantName?.trim(),
+      creditType: tenant.creditType,
+      squareFeet: tenant.squareFeet,
+      rentPsf: tenant.rentPsf,
+      annualEscalations: tenant.annualEscalations,
+      leaseStart: tenant.leaseStart,
+      leaseEnd: tenant.leaseEnd,
+      leaseType: tenant.leaseType,
+      renew: tenant.renew,
+      downtimeMonths: tenant.downtimeMonths,
+      tiPsf: tenant.tiPsf,
+      lcPsf: tenant.lcPsf,
+    };
+
+    if (!payload.tenantName) {
+      return throwError(() => new Error('Tenant name is required'));
+    }
+
+    const request$ = this.isTempId(tenantId)
+      ? this.api.createTenant(this.propertyId, current.version, current.revision, payload)
+      : this.api.updateTenant(this.propertyId, current.version, tenantId, current.revision, payload);
+
+    return request$.pipe(
+      tap((saved) => {
+        this.persistCollectionUpdate(saved, 'tenants');
+      }),
+    );
   }
 
   saveCurrent() {
@@ -182,15 +300,40 @@ export class PropertyStoreService {
       expectedRevision: current.revision,
       propertyDetails: current.propertyDetails,
       underwritingInputs: current.underwritingInputs,
-      brokers: current.brokers,
-      tenants: current.tenants,
+      brokers: current.brokers.map((broker) => ({
+        id: broker.id,
+        name: broker.name,
+        phone: broker.phone,
+        email: broker.email,
+        company: broker.company,
+        isDeleted: broker.isDeleted,
+      })),
+      tenants: current.tenants.map((tenant) => ({
+        id: tenant.id,
+        tenantName: tenant.tenantName,
+        creditType: tenant.creditType,
+        squareFeet: tenant.squareFeet,
+        rentPsf: tenant.rentPsf,
+        annualEscalations: tenant.annualEscalations,
+        leaseStart: tenant.leaseStart,
+        leaseEnd: tenant.leaseEnd,
+        leaseType: tenant.leaseType,
+        renew: tenant.renew,
+        downtimeMonths: tenant.downtimeMonths,
+        tiPsf: tenant.tiPsf,
+        lcPsf: tenant.lcPsf,
+        isVacant: tenant.isVacant,
+        isDeleted: tenant.isDeleted,
+      })),
     };
 
     return this.api.saveVersion(this.propertyId, current.version, payload).pipe(
       tap((saved) => {
-        this.propertySubject.next(saved);
-        this.dirtySubject.next(false);
+        const normalized = this.normalizePropertySnapshot(saved);
+        this.persistedProperty = structuredClone(normalized);
+        this.propertySubject.next(normalized);
         this.validationErrorsSubject.next([]);
+        this.refreshDirtyState();
         this.loadVersions().subscribe();
       }),
     );
@@ -204,8 +347,10 @@ export class PropertyStoreService {
 
     return this.api.saveAs(this.propertyId, current.version, current.revision).pipe(
       tap((saved) => {
-        this.propertySubject.next(saved);
-        this.dirtySubject.next(false);
+        const normalized = this.normalizePropertySnapshot(saved);
+        this.persistedProperty = structuredClone(normalized);
+        this.propertySubject.next(normalized);
+        this.refreshDirtyState();
         this.loadVersions().subscribe();
       }),
     );
@@ -220,5 +365,74 @@ export class PropertyStoreService {
       return `${prefix}-${crypto.randomUUID()}`;
     }
     return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  private isTempId(id: string): boolean {
+    return id.startsWith('temp-');
+  }
+
+  private persistCollectionUpdate(saved: PropertyVersion, collection: 'brokers' | 'tenants') {
+    const currentDraft = this.propertySubject.value;
+    const normalizedSaved = this.normalizePropertySnapshot(saved);
+    this.persistedProperty = structuredClone(normalizedSaved);
+    if (!currentDraft) {
+      this.propertySubject.next(normalizedSaved);
+      this.refreshDirtyState();
+      return;
+    }
+
+    const merged: PropertyVersion = {
+      ...normalizedSaved,
+      propertyDetails: currentDraft.propertyDetails,
+      underwritingInputs: currentDraft.underwritingInputs,
+      brokers: collection === 'brokers' ? normalizedSaved.brokers : currentDraft.brokers,
+      tenants: collection === 'tenants' ? normalizedSaved.tenants : currentDraft.tenants,
+    };
+
+    this.propertySubject.next(merged);
+    this.refreshDirtyState();
+    this.validationErrorsSubject.next([]);
+    this.loadVersions().subscribe();
+  }
+
+  private normalizePropertySnapshot(property: PropertyVersion): PropertyVersion {
+    return {
+      ...property,
+      brokers: property.brokers.map((broker) => ({
+        id: broker.id,
+        name: broker.name,
+        phone: broker.phone,
+        email: broker.email,
+        company: broker.company,
+        isDeleted: broker.isDeleted,
+      })),
+      tenants: property.tenants.map((tenant) => ({
+        id: tenant.id,
+        tenantName: tenant.tenantName,
+        creditType: tenant.creditType,
+        squareFeet: tenant.squareFeet,
+        rentPsf: tenant.rentPsf,
+        annualEscalations: tenant.annualEscalations,
+        leaseStart: tenant.leaseStart,
+        leaseEnd: tenant.leaseEnd,
+        leaseType: tenant.leaseType,
+        renew: tenant.renew,
+        downtimeMonths: tenant.downtimeMonths,
+        tiPsf: tenant.tiPsf,
+        lcPsf: tenant.lcPsf,
+        isVacant: tenant.isVacant,
+        isDeleted: tenant.isDeleted,
+      })),
+    };
+  }
+
+  private refreshDirtyState() {
+    const current = this.propertySubject.value;
+    const persisted = this.persistedProperty;
+    if (!current || !persisted) {
+      this.dirtySubject.next(false);
+      return;
+    }
+    this.dirtySubject.next(JSON.stringify(current) !== JSON.stringify(persisted));
   }
 }

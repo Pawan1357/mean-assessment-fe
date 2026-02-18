@@ -11,8 +11,8 @@
           {{ item.version }}{{ item.isHistorical ? ' (Historical)' : '' }}
         </option>
       </select>
-      <button type="button" (click)="onSaveAs()">Save As</button>
-      <button type="button" class="primary" (click)="onSave()">Save</button>
+      <button type="button" class="btn btn-primary" [disabled]="property.isHistorical" (click)="onSave()">Save</button>
+      <button type="button" class="btn btn-soft" [disabled]="property.isHistorical" (click)="onSaveAs()">Save As</button>
     </div>
   </header>
 
@@ -27,4 +27,9 @@
   <main>
     <router-outlet></router-outlet>
   </main>
+</div>
+
+<div class="app-shell loading-shell" *ngIf="!(store.property$ | async)">
+  <section class="error-banner" *ngIf="errorMessage">{{ errorMessage }}</section>
+  <section class="loading-text" *ngIf="!errorMessage">Loading property data...</section>
 </div>

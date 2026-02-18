@@ -112,8 +112,21 @@ describe('PropertyStoreService', () => {
   let store: PropertyStoreService;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<PropertyApiService>('PropertyApiService', ['getVersion', 'saveVersion', 'saveAs', 'getVersions']);
+    api = jasmine.createSpyObj<PropertyApiService>('PropertyApiService', [
+      'getVersion',
+      'saveVersion',
+      'saveAs',
+      'getVersions',
+      'createBroker',
+      'updateBroker',
+      'softDeleteBroker',
+      'createTenant',
+      'updateTenant',
+      'softDeleteTenant',
+    ]);
     api.getVersions.and.returnValue(of([]));
+    api.softDeleteBroker.and.returnValue(of(baseProperty));
+    api.softDeleteTenant.and.returnValue(of(baseProperty));
     store = new PropertyStoreService(api);
   });
 
@@ -163,10 +176,8 @@ describe('PropertyStoreService', () => {
   it('supports broker and tenant draft mutations', (done) => {
     api.getVersion.and.returnValue(of(baseProperty));
     store.loadVersion().subscribe(() => {
-      store.addBroker();
-      store.addTenant();
-      store.deleteBroker('b1');
-      store.deleteTenant('t1');
+      store.addBrokerDraft();
+      store.addTenantDraft();
 
       store.property$.subscribe((value) => {
         if (!value) {
@@ -213,6 +224,34 @@ describe('PropertyStoreService', () => {
       store.saveAsNextVersion().subscribe(() => {
         expect(api.saveAs).toHaveBeenCalledWith('property-1', '1.1', 2);
         expect(store.hasUnsavedChanges()).toBeFalse();
+        done();
+      });
+    });
+  });
+
+  it('uses broker API operations', (done) => {
+    api.getVersion.and.returnValue(of(baseProperty));
+    api.updateBroker.and.returnValue(of({ ...baseProperty, revision: 3 } as any));
+
+    store.loadVersion().subscribe(() => {
+      store.updateBrokerField('b1', 'name', 'Updated Name');
+
+      store.saveBroker('b1').subscribe(() => {
+        expect(api.updateBroker).toHaveBeenCalled();
+        done();
+      });
+    });
+  });
+
+  it('uses tenant API operations', (done) => {
+    api.getVersion.and.returnValue(of(baseProperty));
+    api.updateTenant.and.returnValue(of({ ...baseProperty, revision: 3 } as any));
+
+    store.loadVersion().subscribe(() => {
+      store.updateTenantField('t1', 'tenantName', 'Updated Tenant');
+
+      store.saveTenant('t1').subscribe(() => {
+        expect(api.updateTenant).toHaveBeenCalled();
         done();
       });
     });

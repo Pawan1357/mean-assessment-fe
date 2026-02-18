@@ -1,10 +1,11 @@
-:root {
+:host {
   --bg: #eef1f6;
   --surface: #ffffff;
   --line: #d9e0ea;
   --text: #243047;
   --muted: #5d6b82;
   --primary: #1e88ff;
+  display: block;
 }
 
 .app-shell {
@@ -47,7 +48,7 @@
 }
 
 select,
-button {
+.btn {
   border: 1px solid var(--line);
   background: var(--surface);
   padding: 8px 12px;
@@ -55,10 +56,25 @@ button {
   cursor: pointer;
 }
 
-button.primary {
+.btn {
+  font-weight: 600;
+}
+
+.btn-primary {
   color: #fff;
   background: var(--primary);
   border-color: var(--primary);
+}
+
+.btn-soft {
+  color: var(--primary);
+  border-color: #b3d6ff;
+  background: #f4f9ff;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .error-banner,
@@ -83,4 +99,15 @@ button.primary {
 
 main {
   padding: 16px;
+}
+
+.loading-shell {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+
+.loading-text {
+  color: var(--muted);
+  font-size: 14px;
 }

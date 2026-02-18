@@ -2,13 +2,14 @@ import { of } from 'rxjs';
 import { PropertyApiService } from './property-api.service';
 
 describe('PropertyApiService', () => {
-  const http = jasmine.createSpyObj('HttpClient', ['get', 'put', 'post']);
+  const http = jasmine.createSpyObj('HttpClient', ['get', 'put', 'post', 'delete']);
   const service = new PropertyApiService(http as any);
 
   beforeEach(() => {
     http.get.calls.reset();
     http.put.calls.reset();
     http.post.calls.reset();
+    http.delete.calls.reset();
   });
 
   it('gets versions and unwraps response envelope', (done) => {
@@ -43,6 +44,15 @@ describe('PropertyApiService', () => {
     service.saveAs('property-1', '1.1', 2).subscribe((saved) => {
       expect(http.post).toHaveBeenCalledWith('/api/properties/property-1/versions/1.1/save-as', { expectedRevision: 2 });
       expect((saved as any).version).toBe('1.2');
+      done();
+    });
+  });
+
+  it('deletes broker and unwraps response envelope', (done) => {
+    http.delete.and.returnValue(of({ success: true, data: { version: '1.1' } }));
+    service.softDeleteBroker('property-1', '1.1', 'b1', 2).subscribe((saved) => {
+      expect(http.delete).toHaveBeenCalledWith('/api/properties/property-1/versions/1.1/brokers/b1?expectedRevision=2');
+      expect((saved as any).version).toBe('1.1');
       done();
     });
   });
