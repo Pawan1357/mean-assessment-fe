@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError, tap } from 'rxjs';
 import { Broker, PropertyVersion, Tenant } from '../models/property.model';
 import { PropertyApiService } from '../services/property-api.service';
+import { extractBackendErrorInfo } from '../utils/http-error.util';
 import { validatePropertyDraft } from '../validators/property-validation.util';
 
 interface VersionOption {
@@ -19,11 +20,13 @@ export class PropertyStoreService {
   private readonly versionsSubject = new BehaviorSubject<VersionOption[]>([]);
   private readonly dirtySubject = new BehaviorSubject<boolean>(false);
   private readonly validationErrorsSubject = new BehaviorSubject<string[]>([]);
+  private readonly serverFieldErrorsSubject = new BehaviorSubject<Record<string, string>>({});
 
   readonly property$: Observable<PropertyVersion | null> = this.propertySubject.asObservable();
   readonly versions$: Observable<VersionOption[]> = this.versionsSubject.asObservable();
   readonly isDirty$: Observable<boolean> = this.dirtySubject.asObservable();
   readonly validationErrors$: Observable<string[]> = this.validationErrorsSubject.asObservable();
+  readonly serverFieldErrors$: Observable<Record<string, string>> = this.serverFieldErrorsSubject.asObservable();
 
   constructor(private readonly api: PropertyApiService) {}
 
@@ -34,6 +37,7 @@ export class PropertyStoreService {
         this.persistedProperty = structuredClone(normalized);
         this.propertySubject.next(normalized);
         this.validationErrorsSubject.next([]);
+        this.serverFieldErrorsSubject.next({});
         this.refreshDirtyState();
       }),
     );
@@ -50,6 +54,7 @@ export class PropertyStoreService {
     }
     const nextDraft = mutator(structuredClone(current));
     this.propertySubject.next(nextDraft);
+    this.serverFieldErrorsSubject.next({});
     this.refreshDirtyState();
   }
 
@@ -311,10 +316,11 @@ export class PropertyStoreService {
 
     return this.api.saveVersion(this.propertyId, current.version, payload).pipe(
       tap((saved) => {
-        const normalized = this.normalizePropertySnapshot(saved);
+        const normalized = this.normalizePropertySnapshot(saved.data);
         this.persistedProperty = structuredClone(normalized);
         this.propertySubject.next(normalized);
         this.validationErrorsSubject.next([]);
+        this.serverFieldErrorsSubject.next({});
         this.refreshDirtyState();
         this.loadVersions().subscribe();
       }),
@@ -360,9 +366,10 @@ export class PropertyStoreService {
 
     return this.api.saveAs(this.propertyId, current.version, payload).pipe(
       tap((saved) => {
-        const normalized = this.normalizePropertySnapshot(saved);
+        const normalized = this.normalizePropertySnapshot(saved.data);
         this.persistedProperty = structuredClone(normalized);
         this.propertySubject.next(normalized);
+        this.serverFieldErrorsSubject.next({});
         this.refreshDirtyState();
         this.loadVersions().subscribe();
       }),
@@ -371,6 +378,15 @@ export class PropertyStoreService {
 
   hasUnsavedChanges(): boolean {
     return this.dirtySubject.value;
+  }
+
+  setServerErrors(error: unknown) {
+    const parsed = extractBackendErrorInfo(error);
+    this.serverFieldErrorsSubject.next(parsed.fieldErrors);
+  }
+
+  getServerFieldError(path: string): string | null {
+    return this.serverFieldErrorsSubject.value[path] ?? null;
   }
 
   canAddBrokerOrTenant(): boolean {

@@ -119,6 +119,12 @@ td {
   font-size: 12px;
 }
 
+.field-error {
+  margin-top: 4px;
+  color: #b32222;
+  font-size: 11px;
+}
+
 .lease-card {
   margin-top: 14px;
 }

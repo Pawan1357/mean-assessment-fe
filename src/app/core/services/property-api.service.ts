@@ -5,6 +5,11 @@ import { ApiSuccessResponse } from '../models/api-response.model';
 import { Broker, PropertyVersion, Tenant } from '../models/property.model';
 import { environment } from '../../../environments/environment';
 
+export interface ApiMutationResult<T> {
+  data: T;
+  message: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PropertyApiService {
   private readonly baseUrl = `${environment.apiBaseUrl}/api/properties`;
@@ -37,12 +42,12 @@ export class PropertyApiService {
     propertyId: string,
     version: string,
     payload: unknown,
-  ): Observable<PropertyVersion> {
+  ): Observable<ApiMutationResult<PropertyVersion>> {
     return this.http
       .put<
         ApiSuccessResponse<PropertyVersion>
       >(`${this.baseUrl}/${propertyId}/versions/${version}`, payload)
-      .pipe(map((response) => response.data));
+      .pipe(map((response) => ({ data: response.data, message: response.message })));
   }
 
   saveAs(
@@ -55,12 +60,12 @@ export class PropertyApiService {
       brokers?: PropertyVersion['brokers'];
       tenants?: PropertyVersion['tenants'];
     },
-  ): Observable<PropertyVersion> {
+  ): Observable<ApiMutationResult<PropertyVersion>> {
     return this.http
       .post<
         ApiSuccessResponse<PropertyVersion>
       >(`${this.baseUrl}/${propertyId}/versions/${version}/save-as`, payload)
-      .pipe(map((response) => response.data));
+      .pipe(map((response) => ({ data: response.data, message: response.message })));
   }
 
   createBroker(

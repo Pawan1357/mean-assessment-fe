@@ -10,6 +10,7 @@ import { extractErrorMessage } from '../../core/utils/http-error.util';
 })
 export class ShellComponent implements OnInit {
   errorMessage = '';
+  successMessage = '';
   validationErrors: string[] = [];
 
   constructor(public readonly store: PropertyStoreService) {}
@@ -25,7 +26,9 @@ export class ShellComponent implements OnInit {
       )
       .subscribe({
       error: (error: unknown) => {
+        this.store.setServerErrors(error);
         this.errorMessage = extractErrorMessage(error);
+        this.successMessage = '';
       },
     });
 
@@ -52,8 +55,14 @@ export class ShellComponent implements OnInit {
     }
 
     this.store.loadVersion(version).subscribe({
+      next: () => {
+        this.errorMessage = '';
+        this.successMessage = '';
+      },
       error: (error: unknown) => {
+        this.store.setServerErrors(error);
         this.errorMessage = extractErrorMessage(error);
+        this.successMessage = '';
       },
     });
   }
@@ -61,30 +70,38 @@ export class ShellComponent implements OnInit {
   onSave() {
     try {
       this.store.saveCurrent().subscribe({
-        next: () => {
+        next: (result) => {
           this.errorMessage = '';
+          this.successMessage = result.message;
         },
         error: (error: unknown) => {
+          this.store.setServerErrors(error);
           this.errorMessage = extractErrorMessage(error);
+          this.successMessage = '';
         },
       });
     } catch (error) {
       this.errorMessage = extractErrorMessage(error);
+      this.successMessage = '';
     }
   }
 
   onSaveAs() {
     try {
       this.store.saveAsNextVersion().subscribe({
-        next: () => {
+        next: (result) => {
           this.errorMessage = '';
+          this.successMessage = result.message;
         },
         error: (error: unknown) => {
+          this.store.setServerErrors(error);
           this.errorMessage = extractErrorMessage(error);
+          this.successMessage = '';
         },
       });
     } catch (error) {
       this.errorMessage = extractErrorMessage(error);
+      this.successMessage = '';
     }
   }
 }

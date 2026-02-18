@@ -192,7 +192,7 @@ describe('PropertyStoreService', () => {
 
   it('saveCurrent sends full payload and clears dirty flag', (done) => {
     api.getVersion.and.returnValue(of(baseProperty));
-    api.saveVersion.and.returnValue(of({ ...baseProperty, revision: 3 } as any));
+    api.saveVersion.and.returnValue(of({ data: { ...baseProperty, revision: 3 }, message: 'Saved ok' } as any));
 
     store.loadVersion().subscribe(() => {
       store.patchDraft((draft) => ({ ...draft, propertyDetails: { ...draft.propertyDetails, market: 'X' } }));
@@ -216,7 +216,7 @@ describe('PropertyStoreService', () => {
 
   it('saveAsNextVersion calls API and clears dirty flag', (done) => {
     api.getVersion.and.returnValue(of(baseProperty));
-    api.saveAs.and.returnValue(of({ ...baseProperty, version: '1.2', revision: 0 } as any));
+    api.saveAs.and.returnValue(of({ data: { ...baseProperty, version: '1.2', revision: 0 }, message: 'Save As ok' } as any));
 
     store.loadVersion().subscribe(() => {
       store.patchDraft((draft) => ({ ...draft, version: '1.1' }));

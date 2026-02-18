@@ -106,4 +106,12 @@ export class PropertyDetailsComponent {
 
     this.store.updatePropertyDetailsField(key, value as PropertyDetails[typeof key]);
   }
+
+  getPropertyFieldError(key: keyof PropertyDetails): string | null {
+    return this.store.getServerFieldError(`propertyDetails.${String(key)}`);
+  }
+
+  getBrokerFieldError(key: 'name' | 'phone' | 'email' | 'company'): string | null {
+    return this.store.getServerFieldError(`brokers.${key}`);
+  }
 }

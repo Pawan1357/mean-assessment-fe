@@ -72,4 +72,12 @@ export class UnderwritingComponent {
     const value = numericFields.has(key) ? Number(input.value || 0) : input.value;
     this.store.updateTenantField(tenant.id, key, value as Tenant[K]);
   }
+
+  getUnderwritingFieldError(key: keyof UnderwritingInputs): string | null {
+    return this.store.getServerFieldError(`underwritingInputs.${String(key)}`);
+  }
+
+  getTenantFieldError(key: 'tenantName' | 'creditType' | 'squareFeet' | 'rentPsf' | 'annualEscalations' | 'leaseStart' | 'leaseEnd' | 'leaseType' | 'renew' | 'downtimeMonths' | 'tiPsf' | 'lcPsf'): string | null {
+    return this.store.getServerFieldError(`tenants.${key}`);
+  }
 }

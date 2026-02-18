@@ -20,6 +20,10 @@
     {{ errorMessage }}
   </section>
 
+  <section class="success-banner" *ngIf="successMessage">
+    {{ successMessage }}
+  </section>
+
   <section class="validation-banner" *ngIf="validationErrors.length > 0">
     <div *ngFor="let error of validationErrors">{{ error }}</div>
   </section>

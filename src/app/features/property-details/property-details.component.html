@@ -10,6 +10,7 @@
         [disabled]="item.key === 'address'"
         (change)="onDetailFieldChange(item.key, $event)"
       />
+      <div class="field-error" *ngIf="getPropertyFieldError(item.key)">{{ getPropertyFieldError(item.key) }}</div>
     </div>
   </section>
 
@@ -19,6 +20,7 @@
       <div class="kv" *ngFor="let item of listingFields">
         <label>{{ item.label }}</label>
         <input [value]="property.propertyDetails[item.key]" (change)="onDetailFieldChange(item.key, $event)" />
+        <div class="field-error" *ngIf="getPropertyFieldError(item.key)">{{ getPropertyFieldError(item.key) }}</div>
       </div>
     </section>
 
@@ -42,10 +44,22 @@
         <tbody>
           <tr *ngFor="let broker of property.brokers">
             <ng-container *ngIf="!broker.isDeleted">
-              <td><input [value]="broker.name" (change)="onBrokerFieldChange(broker, 'name', $event)" /></td>
-              <td><input [value]="broker.phone" (change)="onBrokerFieldChange(broker, 'phone', $event)" /></td>
-              <td><input [value]="broker.email" (change)="onBrokerFieldChange(broker, 'email', $event)" /></td>
-              <td><input [value]="broker.company" (change)="onBrokerFieldChange(broker, 'company', $event)" /></td>
+              <td>
+                <input [value]="broker.name" (change)="onBrokerFieldChange(broker, 'name', $event)" />
+                <div class="field-error" *ngIf="getBrokerFieldError('name')">{{ getBrokerFieldError('name') }}</div>
+              </td>
+              <td>
+                <input [value]="broker.phone" (change)="onBrokerFieldChange(broker, 'phone', $event)" />
+                <div class="field-error" *ngIf="getBrokerFieldError('phone')">{{ getBrokerFieldError('phone') }}</div>
+              </td>
+              <td>
+                <input [value]="broker.email" (change)="onBrokerFieldChange(broker, 'email', $event)" />
+                <div class="field-error" *ngIf="getBrokerFieldError('email')">{{ getBrokerFieldError('email') }}</div>
+              </td>
+              <td>
+                <input [value]="broker.company" (change)="onBrokerFieldChange(broker, 'company', $event)" />
+                <div class="field-error" *ngIf="getBrokerFieldError('company')">{{ getBrokerFieldError('company') }}</div>
+              </td>
               <td class="actions-cell">
                 <button type="button" class="btn btn-primary" [disabled]="!store.canSaveBroker(broker.id)" (click)="onSaveBroker(broker.id)">Save</button>
                 <button type="button" class="btn btn-danger" [disabled]="!store.canDeleteBroker(broker.id)" (click)="onDeleteBroker(broker.id)">Delete</button>
@@ -62,6 +76,7 @@
     <div class="kv" *ngFor="let item of specsFields">
       <label>{{ item.label }}</label>
       <input [value]="property.propertyDetails[item.key]" (change)="onDetailFieldChange(item.key, $event)" />
+      <div class="field-error" *ngIf="getPropertyFieldError(item.key)">{{ getPropertyFieldError(item.key) }}</div>
     </div>
   </section>
 </section>

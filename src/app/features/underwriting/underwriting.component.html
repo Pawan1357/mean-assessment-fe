@@ -11,6 +11,7 @@
         [value]="property.underwritingInputs[field.key]"
         (change)="onUnderwritingFieldChange(field.key, $event)"
       />
+      <div class="field-error" *ngIf="getUnderwritingFieldError(field.key)">{{ getUnderwritingFieldError(field.key) }}</div>
     </div>
   </div>
 </section>
@@ -50,6 +51,7 @@
                 [value]="tenant.tenantName"
                 (change)="onTenantFieldChange(tenant, 'tenantName', $event)"
               />
+              <div class="field-error" *ngIf="getTenantFieldError('tenantName')">{{ getTenantFieldError('tenantName') }}</div>
             </td>
             <td>
               <select
@@ -62,12 +64,28 @@
                 <option>Local</option>
                 <option>N/A</option>
               </select>
+              <div class="field-error" *ngIf="getTenantFieldError('creditType')">{{ getTenantFieldError('creditType') }}</div>
             </td>
-            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.squareFeet" (change)="onTenantFieldChange(tenant, 'squareFeet', $event)" /></td>
-            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.rentPsf" (change)="onTenantFieldChange(tenant, 'rentPsf', $event)" /></td>
-            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.annualEscalations" (change)="onTenantFieldChange(tenant, 'annualEscalations', $event)" /></td>
-            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="date" [value]="tenant.leaseStart | date : 'yyyy-MM-dd'" (change)="onTenantFieldChange(tenant, 'leaseStart', $event)" /></td>
-            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="date" [value]="tenant.leaseEnd | date : 'yyyy-MM-dd'" (change)="onTenantFieldChange(tenant, 'leaseEnd', $event)" /></td>
+            <td>
+              <input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.squareFeet" (change)="onTenantFieldChange(tenant, 'squareFeet', $event)" />
+              <div class="field-error" *ngIf="getTenantFieldError('squareFeet')">{{ getTenantFieldError('squareFeet') }}</div>
+            </td>
+            <td>
+              <input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.rentPsf" (change)="onTenantFieldChange(tenant, 'rentPsf', $event)" />
+              <div class="field-error" *ngIf="getTenantFieldError('rentPsf')">{{ getTenantFieldError('rentPsf') }}</div>
+            </td>
+            <td>
+              <input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.annualEscalations" (change)="onTenantFieldChange(tenant, 'annualEscalations', $event)" />
+              <div class="field-error" *ngIf="getTenantFieldError('annualEscalations')">{{ getTenantFieldError('annualEscalations') }}</div>
+            </td>
+            <td>
+              <input [disabled]="tenant.isVacant || tenant.isDeleted" type="date" [value]="tenant.leaseStart | date : 'yyyy-MM-dd'" (change)="onTenantFieldChange(tenant, 'leaseStart', $event)" />
+              <div class="field-error" *ngIf="getTenantFieldError('leaseStart')">{{ getTenantFieldError('leaseStart') }}</div>
+            </td>
+            <td>
+              <input [disabled]="tenant.isVacant || tenant.isDeleted" type="date" [value]="tenant.leaseEnd | date : 'yyyy-MM-dd'" (change)="onTenantFieldChange(tenant, 'leaseEnd', $event)" />
+              <div class="field-error" *ngIf="getTenantFieldError('leaseEnd')">{{ getTenantFieldError('leaseEnd') }}</div>
+            </td>
             <td>
               <select
                 [disabled]="tenant.isVacant || tenant.isDeleted"
@@ -79,6 +97,7 @@
                 <option>Modified Gross</option>
                 <option>N/A</option>
               </select>
+              <div class="field-error" *ngIf="getTenantFieldError('leaseType')">{{ getTenantFieldError('leaseType') }}</div>
             </td>
             <td>
               <select
@@ -91,10 +110,20 @@
                 <option>Maybe</option>
                 <option>N/A</option>
               </select>
+              <div class="field-error" *ngIf="getTenantFieldError('renew')">{{ getTenantFieldError('renew') }}</div>
             </td>
-            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.downtimeMonths" (change)="onTenantFieldChange(tenant, 'downtimeMonths', $event)" /></td>
-            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.tiPsf" (change)="onTenantFieldChange(tenant, 'tiPsf', $event)" /></td>
-            <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.lcPsf" (change)="onTenantFieldChange(tenant, 'lcPsf', $event)" /></td>
+            <td>
+              <input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.downtimeMonths" (change)="onTenantFieldChange(tenant, 'downtimeMonths', $event)" />
+              <div class="field-error" *ngIf="getTenantFieldError('downtimeMonths')">{{ getTenantFieldError('downtimeMonths') }}</div>
+            </td>
+            <td>
+              <input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.tiPsf" (change)="onTenantFieldChange(tenant, 'tiPsf', $event)" />
+              <div class="field-error" *ngIf="getTenantFieldError('tiPsf')">{{ getTenantFieldError('tiPsf') }}</div>
+            </td>
+            <td>
+              <input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.lcPsf" (change)="onTenantFieldChange(tenant, 'lcPsf', $event)" />
+              <div class="field-error" *ngIf="getTenantFieldError('lcPsf')">{{ getTenantFieldError('lcPsf') }}</div>
+            </td>
             <td>
               <div class="actions-cell">
                 <button type="button" class="btn btn-primary" [disabled]="!store.canSaveTenant(tenant.id)" (click)="onSaveTenant(tenant.id)">Save</button>
