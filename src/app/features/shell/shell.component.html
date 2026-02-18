@@ -11,8 +11,8 @@
           {{ item.version }}{{ item.isHistorical ? ' (Historical)' : '' }}
         </option>
       </select>
-      <button type="button" class="btn btn-primary" [disabled]="property.isHistorical" (click)="onSave()">Save</button>
-      <button type="button" class="btn btn-soft" [disabled]="property.isHistorical" (click)="onSaveAs()">Save As</button>
+      <button type="button" class="btn btn-primary" [disabled]="property.isHistorical || !(store.isDirty$ | async)" (click)="onSave()">Save</button>
+      <button type="button" class="btn btn-soft" [disabled]="property.isHistorical || !(store.isDirty$ | async)" (click)="onSaveAs()">Save As</button>
     </div>
   </header>
 

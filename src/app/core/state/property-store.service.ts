@@ -136,12 +136,7 @@ export class PropertyStoreService {
       return throwError(() => new Error('Broker not found in draft'));
     }
 
-    const payload = {
-      name: broker.name?.trim(),
-      phone: broker.phone?.trim(),
-      email: broker.email?.trim(),
-      company: broker.company?.trim(),
-    };
+    const payload = this.sanitizeBroker(broker);
 
     if (!payload.name || !payload.phone || !payload.email || !payload.company) {
       return throwError(() => new Error('Broker name, phone, email and company are required'));
@@ -254,20 +249,7 @@ export class PropertyStoreService {
       return throwError(() => new Error('Tenant not found in draft'));
     }
 
-    const payload = {
-      tenantName: tenant.tenantName?.trim(),
-      creditType: tenant.creditType,
-      squareFeet: tenant.squareFeet,
-      rentPsf: tenant.rentPsf,
-      annualEscalations: tenant.annualEscalations,
-      leaseStart: tenant.leaseStart,
-      leaseEnd: tenant.leaseEnd,
-      leaseType: tenant.leaseType,
-      renew: tenant.renew,
-      downtimeMonths: tenant.downtimeMonths,
-      tiPsf: tenant.tiPsf,
-      lcPsf: tenant.lcPsf,
-    };
+    const payload = this.sanitizeTenant(tenant);
 
     if (!payload.tenantName) {
       return throwError(() => new Error('Tenant name is required'));
@@ -345,7 +327,38 @@ export class PropertyStoreService {
       throw new Error('Property not loaded');
     }
 
-    return this.api.saveAs(this.propertyId, current.version, current.revision).pipe(
+    const payload = {
+      expectedRevision: current.revision,
+      propertyDetails: current.propertyDetails,
+      underwritingInputs: current.underwritingInputs,
+      brokers: current.brokers.map((broker) => ({
+        id: broker.id,
+        name: broker.name,
+        phone: broker.phone,
+        email: broker.email,
+        company: broker.company,
+        isDeleted: broker.isDeleted,
+      })),
+      tenants: current.tenants.map((tenant) => ({
+        id: tenant.id,
+        tenantName: tenant.tenantName,
+        creditType: tenant.creditType,
+        squareFeet: tenant.squareFeet,
+        rentPsf: tenant.rentPsf,
+        annualEscalations: tenant.annualEscalations,
+        leaseStart: tenant.leaseStart,
+        leaseEnd: tenant.leaseEnd,
+        leaseType: tenant.leaseType,
+        renew: tenant.renew,
+        downtimeMonths: tenant.downtimeMonths,
+        tiPsf: tenant.tiPsf,
+        lcPsf: tenant.lcPsf,
+        isVacant: tenant.isVacant,
+        isDeleted: tenant.isDeleted,
+      })),
+    };
+
+    return this.api.saveAs(this.propertyId, current.version, payload).pipe(
       tap((saved) => {
         const normalized = this.normalizePropertySnapshot(saved);
         this.persistedProperty = structuredClone(normalized);
@@ -360,6 +373,87 @@ export class PropertyStoreService {
     return this.dirtySubject.value;
   }
 
+  canAddBrokerOrTenant(): boolean {
+    const current = this.propertySubject.value;
+    return !!current && !current.isHistorical;
+  }
+
+  canSaveBroker(brokerId: string): boolean {
+    const current = this.propertySubject.value;
+    if (!current || current.isHistorical) {
+      return false;
+    }
+
+    const broker = current.brokers.find((item) => item.id === brokerId);
+    if (!broker || broker.isDeleted) {
+      return false;
+    }
+
+    const payload = this.sanitizeBroker(broker);
+    if (!payload.name || !payload.phone || !payload.email || !payload.company) {
+      return false;
+    }
+
+    if (this.isTempId(brokerId)) {
+      return true;
+    }
+
+    const persisted = this.persistedProperty?.brokers.find((item) => item.id === brokerId);
+    if (!persisted) {
+      return false;
+    }
+
+    return JSON.stringify(payload) !== JSON.stringify(this.sanitizeBroker(persisted));
+  }
+
+  canDeleteBroker(brokerId: string): boolean {
+    const current = this.propertySubject.value;
+    if (!current || current.isHistorical) {
+      return false;
+    }
+
+    const broker = current.brokers.find((item) => item.id === brokerId);
+    return !!broker && !broker.isDeleted;
+  }
+
+  canSaveTenant(tenantId: string): boolean {
+    const current = this.propertySubject.value;
+    if (!current || current.isHistorical || tenantId === 'vacant-row') {
+      return false;
+    }
+
+    const tenant = current.tenants.find((item) => item.id === tenantId);
+    if (!tenant || tenant.isDeleted || tenant.isVacant) {
+      return false;
+    }
+
+    const payload = this.sanitizeTenant(tenant);
+    if (!payload.tenantName) {
+      return false;
+    }
+
+    if (this.isTempId(tenantId)) {
+      return true;
+    }
+
+    const persisted = this.persistedProperty?.tenants.find((item) => item.id === tenantId);
+    if (!persisted) {
+      return false;
+    }
+
+    return JSON.stringify(payload) !== JSON.stringify(this.sanitizeTenant(persisted));
+  }
+
+  canDeleteTenant(tenantId: string): boolean {
+    const current = this.propertySubject.value;
+    if (!current || current.isHistorical || tenantId === 'vacant-row') {
+      return false;
+    }
+
+    const tenant = current.tenants.find((item) => item.id === tenantId);
+    return !!tenant && !tenant.isDeleted && !tenant.isVacant;
+  }
+
   private generateId(prefix: string): string {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
       return `${prefix}-${crypto.randomUUID()}`;
@@ -369,6 +463,32 @@ export class PropertyStoreService {
 
   private isTempId(id: string): boolean {
     return id.startsWith('temp-');
+  }
+
+  private sanitizeBroker(broker: Broker): Omit<Broker, 'id' | 'isDeleted'> {
+    return {
+      name: broker.name?.trim(),
+      phone: broker.phone?.trim(),
+      email: broker.email?.trim(),
+      company: broker.company?.trim(),
+    };
+  }
+
+  private sanitizeTenant(tenant: Tenant): Omit<Tenant, 'id' | 'isVacant' | 'isDeleted'> {
+    return {
+      tenantName: tenant.tenantName?.trim(),
+      creditType: tenant.creditType,
+      squareFeet: tenant.squareFeet,
+      rentPsf: tenant.rentPsf,
+      annualEscalations: tenant.annualEscalations,
+      leaseStart: tenant.leaseStart,
+      leaseEnd: tenant.leaseEnd,
+      leaseType: tenant.leaseType,
+      renew: tenant.renew,
+      downtimeMonths: tenant.downtimeMonths,
+      tiPsf: tenant.tiPsf,
+      lcPsf: tenant.lcPsf,
+    };
   }
 
   private persistCollectionUpdate(saved: PropertyVersion, collection: 'brokers' | 'tenants') {

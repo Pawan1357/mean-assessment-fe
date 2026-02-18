@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Tenant, UnderwritingInputs } from '../../core/models/property.model';
 import { PropertyStoreService } from '../../core/state/property-store.service';
+import { extractErrorMessage } from '../../core/utils/http-error.util';
 
 @Component({
   selector: 'app-underwriting',
@@ -35,6 +36,9 @@ export class UnderwritingComponent {
 
   onAddTenant() {
     this.actionError = '';
+    if (!this.store.canAddBrokerOrTenant()) {
+      return;
+    }
     this.store.addTenantDraft();
   }
 
@@ -42,7 +46,7 @@ export class UnderwritingComponent {
     this.actionError = '';
     this.store.deleteTenant(tenantId).subscribe({
       error: (error: unknown) => {
-        this.actionError = error instanceof Error ? error.message : 'Failed to delete tenant';
+        this.actionError = extractErrorMessage(error);
       },
     });
   }
@@ -51,7 +55,7 @@ export class UnderwritingComponent {
     this.actionError = '';
     this.store.saveTenant(tenantId).subscribe({
       error: (error: unknown) => {
-        this.actionError = error instanceof Error ? error.message : 'Failed to save tenant';
+        this.actionError = extractErrorMessage(error);
       },
     });
   }

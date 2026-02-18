@@ -61,6 +61,11 @@ select,
   border-color: #efb3b3;
 }
 
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

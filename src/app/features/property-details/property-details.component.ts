@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Broker, PropertyDetails } from '../../core/models/property.model';
 import { PropertyStoreService } from '../../core/state/property-store.service';
+import { extractErrorMessage } from '../../core/utils/http-error.util';
 
 @Component({
   selector: 'app-property-details',
@@ -50,6 +51,9 @@ export class PropertyDetailsComponent {
 
   onAddBroker() {
     this.actionError = '';
+    if (!this.store.canAddBrokerOrTenant()) {
+      return;
+    }
     this.store.addBrokerDraft();
   }
 
@@ -57,7 +61,7 @@ export class PropertyDetailsComponent {
     this.actionError = '';
     this.store.deleteBroker(brokerId).subscribe({
       error: (error: unknown) => {
-        this.actionError = error instanceof Error ? error.message : 'Failed to delete broker';
+        this.actionError = extractErrorMessage(error);
       },
     });
   }
@@ -66,7 +70,7 @@ export class PropertyDetailsComponent {
     this.actionError = '';
     this.store.saveBroker(brokerId).subscribe({
       error: (error: unknown) => {
-        this.actionError = error instanceof Error ? error.message : 'Failed to save broker';
+        this.actionError = extractErrorMessage(error);
       },
     });
   }

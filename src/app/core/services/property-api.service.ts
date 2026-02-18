@@ -48,12 +48,18 @@ export class PropertyApiService {
   saveAs(
     propertyId: string,
     version: string,
-    expectedRevision: number,
+    payload: {
+      expectedRevision: number;
+      propertyDetails?: PropertyVersion['propertyDetails'];
+      underwritingInputs?: PropertyVersion['underwritingInputs'];
+      brokers?: PropertyVersion['brokers'];
+      tenants?: PropertyVersion['tenants'];
+    },
   ): Observable<PropertyVersion> {
     return this.http
       .post<
         ApiSuccessResponse<PropertyVersion>
-      >(`${this.baseUrl}/${propertyId}/versions/${version}/save-as`, { expectedRevision })
+      >(`${this.baseUrl}/${propertyId}/versions/${version}/save-as`, payload)
       .pipe(map((response) => response.data));
   }
 

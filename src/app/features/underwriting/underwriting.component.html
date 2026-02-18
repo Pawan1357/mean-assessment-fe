@@ -18,7 +18,7 @@
 <section class="card" *ngIf="store.property$ | async as property">
   <div class="section-head">
     <h2>Tenants</h2>
-    <button type="button" class="btn btn-soft" (click)="onAddTenant()">Add Tenant</button>
+    <button type="button" class="btn btn-soft" [disabled]="!store.canAddBrokerOrTenant()" (click)="onAddTenant()">Add Tenant</button>
   </div>
   <div class="inline-error" *ngIf="actionError">{{ actionError }}</div>
 
@@ -97,8 +97,8 @@
             <td><input [disabled]="tenant.isVacant || tenant.isDeleted" type="number" [value]="tenant.lcPsf" (change)="onTenantFieldChange(tenant, 'lcPsf', $event)" /></td>
             <td>
               <div class="actions-cell">
-                <button type="button" class="btn btn-primary" [disabled]="tenant.isVacant || tenant.isDeleted" (click)="onSaveTenant(tenant.id)">Save</button>
-                <button type="button" class="btn btn-danger" [disabled]="tenant.isVacant || tenant.isDeleted" (click)="onDeleteTenant(tenant.id)">Delete</button>
+                <button type="button" class="btn btn-primary" [disabled]="!store.canSaveTenant(tenant.id)" (click)="onSaveTenant(tenant.id)">Save</button>
+                <button type="button" class="btn btn-danger" [disabled]="!store.canDeleteTenant(tenant.id)" (click)="onDeleteTenant(tenant.id)">Delete</button>
               </div>
             </td>
           </ng-container>

@@ -222,7 +222,17 @@ describe('PropertyStoreService', () => {
       store.patchDraft((draft) => ({ ...draft, version: '1.1' }));
 
       store.saveAsNextVersion().subscribe(() => {
-        expect(api.saveAs).toHaveBeenCalledWith('property-1', '1.1', 2);
+        expect(api.saveAs).toHaveBeenCalledWith(
+          'property-1',
+          '1.1',
+          jasmine.objectContaining({
+            expectedRevision: 2,
+            propertyDetails: jasmine.any(Object),
+            underwritingInputs: jasmine.any(Object),
+            brokers: jasmine.any(Array),
+            tenants: jasmine.any(Array),
+          }),
+        );
         expect(store.hasUnsavedChanges()).toBeFalse();
         done();
       });

@@ -41,7 +41,7 @@ describe('PropertyApiService', () => {
 
   it('performs save-as and unwraps response envelope', (done) => {
     http.post.and.returnValue(of({ success: true, data: { version: '1.2' } }));
-    service.saveAs('property-1', '1.1', 2).subscribe((saved) => {
+    service.saveAs('property-1', '1.1', { expectedRevision: 2 }).subscribe((saved) => {
       expect(http.post).toHaveBeenCalledWith('/api/properties/property-1/versions/1.1/save-as', { expectedRevision: 2 });
       expect((saved as any).version).toBe('1.2');
       done();

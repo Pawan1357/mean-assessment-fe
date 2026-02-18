@@ -1,7 +1,7 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import { switchMap } from 'rxjs';
 import { PropertyStoreService } from '../../core/state/property-store.service';
+import { extractErrorMessage } from '../../core/utils/http-error.util';
 
 @Component({
   selector: 'app-shell',
@@ -25,7 +25,7 @@ export class ShellComponent implements OnInit {
       )
       .subscribe({
       error: (error: unknown) => {
-        this.errorMessage = this.extractErrorMessage(error);
+        this.errorMessage = extractErrorMessage(error);
       },
     });
 
@@ -53,7 +53,7 @@ export class ShellComponent implements OnInit {
 
     this.store.loadVersion(version).subscribe({
       error: (error: unknown) => {
-        this.errorMessage = this.extractErrorMessage(error);
+        this.errorMessage = extractErrorMessage(error);
       },
     });
   }
@@ -65,47 +65,26 @@ export class ShellComponent implements OnInit {
           this.errorMessage = '';
         },
         error: (error: unknown) => {
-          this.errorMessage = this.extractErrorMessage(error);
+          this.errorMessage = extractErrorMessage(error);
         },
       });
     } catch (error) {
-      this.errorMessage = this.extractErrorMessage(error);
+      this.errorMessage = extractErrorMessage(error);
     }
   }
 
   onSaveAs() {
-    this.store.saveAsNextVersion().subscribe({
-      next: () => {
-        this.errorMessage = '';
-      },
-      error: (error: unknown) => {
-        this.errorMessage = this.extractErrorMessage(error);
-      },
-    });
-  }
-
-  private extractErrorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      const backendMessage =
-        typeof error.error === 'object' && error.error !== null && 'message' in error.error
-          ? String((error.error as { message: unknown }).message)
-          : '';
-
-      if (backendMessage) {
-        return backendMessage;
-      }
-      return error.message || `HTTP ${error.status}`;
+    try {
+      this.store.saveAsNextVersion().subscribe({
+        next: () => {
+          this.errorMessage = '';
+        },
+        error: (error: unknown) => {
+          this.errorMessage = extractErrorMessage(error);
+        },
+      });
+    } catch (error) {
+      this.errorMessage = extractErrorMessage(error);
     }
-
-    if (error instanceof Error) {
-      return error.message;
-    }
-    if (typeof error === 'object' && error !== null && 'error' in error) {
-      const httpError = error as { error?: { message?: string } };
-      if (httpError.error?.message) {
-        return httpError.error.message;
-      }
-    }
-    return 'An unexpected error occurred';
   }
 }
