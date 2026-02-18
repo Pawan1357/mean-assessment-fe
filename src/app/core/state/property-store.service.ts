@@ -427,6 +427,12 @@ export class PropertyStoreService {
     if (!payload.name || !payload.phone || !payload.email || !payload.company) {
       return false;
     }
+    if (!/^[0-9+\-()\s]+$/.test(payload.phone)) {
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+      return false;
+    }
 
     if (this.isTempId(brokerId)) {
       return true;

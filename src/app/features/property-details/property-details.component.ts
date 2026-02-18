@@ -10,6 +10,7 @@ import { extractErrorMessage } from '../../core/utils/http-error.util';
 })
 export class PropertyDetailsComponent {
   actionError = '';
+  private readonly brokerFieldErrors = new Map<string, string>();
   private readonly numericPropertyFields = new Set<keyof PropertyDetails>([
     'lastTradePrice',
     'askingPrice',
@@ -93,12 +94,33 @@ export class PropertyDetailsComponent {
 
   onBrokerFieldChange(broker: Broker, key: keyof Broker, event: Event) {
     const value = (event.target as HTMLInputElement).value;
+    if (key === 'phone') {
+      if (!/^[0-9+\-()\s]*$/.test(value)) {
+        return;
+      }
+      this.store.updateBrokerField(broker.id, key, value);
+      return;
+    }
     this.store.updateBrokerField(broker.id, key, value);
   }
 
   onBrokerFieldChangeWithIndex(broker: Broker, brokerIndex: number, key: keyof Broker, event: Event) {
     this.store.clearServerFieldErrors([`brokers.${brokerIndex}.${String(key)}`, `brokers.${String(key)}`]);
+    this.clearBrokerFieldError(brokerIndex, key);
     this.onBrokerFieldChange(broker, key, event);
+
+    if (key === 'email') {
+      const value = (event.target as HTMLInputElement).value.trim();
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        this.setBrokerFieldError(brokerIndex, key, 'Enter a valid email address');
+      }
+    }
+    if (key === 'phone') {
+      const value = (event.target as HTMLInputElement).value.trim();
+      if (value && !/^[0-9+\-()\s]+$/.test(value)) {
+        this.setBrokerFieldError(brokerIndex, key, 'Enter a valid phone number');
+      }
+    }
   }
 
   onDetailFieldChange(key: keyof PropertyDetails, event: Event) {
@@ -129,11 +151,27 @@ export class PropertyDetailsComponent {
   }
 
   getBrokerFieldErrorAtIndex(brokerIndex: number, key: 'name' | 'phone' | 'email' | 'company'): string | null {
-    return this.store.getServerFieldError(`brokers.${brokerIndex}.${key}`) ?? this.getBrokerFieldError(key);
+    return (
+      this.brokerFieldErrors.get(this.brokerErrorKey(brokerIndex, key)) ??
+      this.store.getServerFieldError(`brokers.${brokerIndex}.${key}`) ??
+      this.getBrokerFieldError(key)
+    );
   }
 
   trackByBrokerId(_index: number, broker: Broker): string {
     return broker.id;
+  }
+
+  private brokerErrorKey(brokerIndex: number, key: keyof Broker): string {
+    return `${brokerIndex}.${String(key)}`;
+  }
+
+  private setBrokerFieldError(brokerIndex: number, key: keyof Broker, message: string) {
+    this.brokerFieldErrors.set(this.brokerErrorKey(brokerIndex, key), message);
+  }
+
+  private clearBrokerFieldError(brokerIndex: number, key: keyof Broker) {
+    this.brokerFieldErrors.delete(this.brokerErrorKey(brokerIndex, key));
   }
 
   getFieldInputType(key: keyof PropertyDetails): 'text' | 'number' | 'date' {

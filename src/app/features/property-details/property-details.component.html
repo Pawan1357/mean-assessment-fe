@@ -50,11 +50,11 @@
                 <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'name')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'name') }}</div>
               </td>
               <td>
-                <input [value]="broker.phone" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'phone', $event)" />
+                <input type="tel" [value]="broker.phone" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'phone', $event)" />
                 <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'phone')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'phone') }}</div>
               </td>
               <td>
-                <input [value]="broker.email" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'email', $event)" />
+                <input type="email" [value]="broker.email" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'email', $event)" />
                 <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'email')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'email') }}</div>
               </td>
               <td>
