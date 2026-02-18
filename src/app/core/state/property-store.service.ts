@@ -380,6 +380,10 @@ export class PropertyStoreService {
     return this.dirtySubject.value;
   }
 
+  getCurrentVersion(): string {
+    return this.propertySubject.value?.version ?? '';
+  }
+
   setServerErrors(error: unknown) {
     const parsed = extractBackendErrorInfo(error);
     this.serverFieldErrorsSubject.next(parsed.fieldErrors);

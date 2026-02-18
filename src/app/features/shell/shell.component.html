@@ -6,7 +6,7 @@
     </nav>
 
     <div class="actions">
-      <select [value]="property.version" (change)="onVersionChange($any($event.target).value)">
+      <select [value]="property.version" (change)="onVersionChange($any($event.target).value, $event)">
         <option *ngFor="let item of store.versions$ | async" [value]="item.version">
           {{ item.version }}{{ item.isHistorical ? ' (Historical)' : '' }}
         </option>

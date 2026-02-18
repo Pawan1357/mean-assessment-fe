@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { switchMap } from 'rxjs';
 import { PropertyStoreService } from '../../core/state/property-store.service';
 import { extractErrorMessage } from '../../core/utils/http-error.util';
@@ -8,10 +8,11 @@ import { extractErrorMessage } from '../../core/utils/http-error.util';
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.css'],
 })
-export class ShellComponent implements OnInit {
+export class ShellComponent implements OnInit, OnDestroy {
   errorMessage = '';
   successMessage = '';
   validationErrors: string[] = [];
+  private successTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(public readonly store: PropertyStoreService) {}
 
@@ -35,6 +36,12 @@ export class ShellComponent implements OnInit {
     this.store.validationErrors$.subscribe((errors) => {
       this.validationErrors = errors;
     });
+
+    this.store.serverFieldErrors$.subscribe((fieldErrors) => {
+      if (Object.keys(fieldErrors).length === 0) {
+        this.errorMessage = '';
+      }
+    });
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -45,12 +52,23 @@ export class ShellComponent implements OnInit {
     }
   }
 
-  onVersionChange(version: string) {
+  ngOnDestroy(): void {
+    if (this.successTimer) {
+      clearTimeout(this.successTimer);
+      this.successTimer = null;
+    }
+  }
+
+  onVersionChange(version: string, event?: Event) {
     if (!version) {
       return;
     }
 
     if (this.store.hasUnsavedChanges() && !window.confirm('You have unsaved changes. Switch version anyway?')) {
+      const currentVersion = this.store.getCurrentVersion();
+      if (event && currentVersion) {
+        (event.target as HTMLSelectElement).value = currentVersion;
+      }
       return;
     }
 
@@ -72,7 +90,7 @@ export class ShellComponent implements OnInit {
       this.store.saveCurrent().subscribe({
         next: (result) => {
           this.errorMessage = '';
-          this.successMessage = result.message;
+          this.setSuccessMessage(result.message);
         },
         error: (error: unknown) => {
           this.store.setServerErrors(error);
@@ -91,7 +109,7 @@ export class ShellComponent implements OnInit {
       this.store.saveAsNextVersion().subscribe({
         next: (result) => {
           this.errorMessage = '';
-          this.successMessage = result.message;
+          this.setSuccessMessage(result.message);
         },
         error: (error: unknown) => {
           this.store.setServerErrors(error);
@@ -103,5 +121,16 @@ export class ShellComponent implements OnInit {
       this.errorMessage = extractErrorMessage(error);
       this.successMessage = '';
     }
+  }
+
+  private setSuccessMessage(message: string) {
+    this.successMessage = message;
+    if (this.successTimer) {
+      clearTimeout(this.successTimer);
+    }
+    this.successTimer = setTimeout(() => {
+      this.successMessage = '';
+      this.successTimer = null;
+    }, 3500);
   }
 }
