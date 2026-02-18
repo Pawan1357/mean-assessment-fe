@@ -14,6 +14,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   validationErrors: string[] = [];
   private successTimer: ReturnType<typeof setTimeout> | null = null;
   private errorTimer: ReturnType<typeof setTimeout> | null = null;
+  private validationTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(public readonly store: PropertyStoreService) {}
 
@@ -36,6 +37,16 @@ export class ShellComponent implements OnInit, OnDestroy {
 
     this.store.validationErrors$.subscribe((errors) => {
       this.validationErrors = errors;
+      if (this.validationTimer) {
+        clearTimeout(this.validationTimer);
+        this.validationTimer = null;
+      }
+      if (errors.length > 0) {
+        this.validationTimer = setTimeout(() => {
+          this.validationErrors = [];
+          this.validationTimer = null;
+        }, 4500);
+      }
     });
 
   }
@@ -56,6 +67,10 @@ export class ShellComponent implements OnInit, OnDestroy {
     if (this.errorTimer) {
       clearTimeout(this.errorTimer);
       this.errorTimer = null;
+    }
+    if (this.validationTimer) {
+      clearTimeout(this.validationTimer);
+      this.validationTimer = null;
     }
   }
 
@@ -94,11 +109,21 @@ export class ShellComponent implements OnInit, OnDestroy {
         },
         error: (error: unknown) => {
           this.store.setServerErrors(error);
+          if (this.validationErrors.length > 0) {
+            this.errorMessage = '';
+            this.successMessage = '';
+            return;
+          }
           this.setErrorMessage(extractErrorMessage(error), this.store.hasServerFieldErrors());
           this.successMessage = '';
         },
       });
     } catch (error) {
+      if (this.validationErrors.length > 0) {
+        this.errorMessage = '';
+        this.successMessage = '';
+        return;
+      }
       this.setErrorMessage(extractErrorMessage(error), this.store.hasServerFieldErrors());
       this.successMessage = '';
     }
@@ -113,11 +138,21 @@ export class ShellComponent implements OnInit, OnDestroy {
         },
         error: (error: unknown) => {
           this.store.setServerErrors(error);
+          if (this.validationErrors.length > 0) {
+            this.errorMessage = '';
+            this.successMessage = '';
+            return;
+          }
           this.setErrorMessage(extractErrorMessage(error), this.store.hasServerFieldErrors());
           this.successMessage = '';
         },
       });
     } catch (error) {
+      if (this.validationErrors.length > 0) {
+        this.errorMessage = '';
+        this.successMessage = '';
+        return;
+      }
       this.setErrorMessage(extractErrorMessage(error), this.store.hasServerFieldErrors());
       this.successMessage = '';
     }
@@ -134,17 +169,15 @@ export class ShellComponent implements OnInit, OnDestroy {
     }, 3500);
   }
 
-  private setErrorMessage(message: string, isFieldError: boolean) {
+  private setErrorMessage(message: string, _isFieldError: boolean) {
     this.errorMessage = message;
     if (this.errorTimer) {
       clearTimeout(this.errorTimer);
       this.errorTimer = null;
     }
-    if (!isFieldError) {
-      this.errorTimer = setTimeout(() => {
-        this.errorMessage = '';
-        this.errorTimer = null;
-      }, 4500);
-    }
+    this.errorTimer = setTimeout(() => {
+      this.errorMessage = '';
+      this.errorTimer = null;
+    }, 4500);
   }
 }

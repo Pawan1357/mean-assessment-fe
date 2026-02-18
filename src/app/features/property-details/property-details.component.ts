@@ -124,4 +124,8 @@ export class PropertyDetailsComponent {
   getBrokerFieldErrorAtIndex(brokerIndex: number, key: 'name' | 'phone' | 'email' | 'company'): string | null {
     return this.store.getServerFieldError(`brokers.${brokerIndex}.${key}`) ?? this.getBrokerFieldError(key);
   }
+
+  trackByBrokerId(_index: number, broker: Broker): string {
+    return broker.id;
+  }
 }

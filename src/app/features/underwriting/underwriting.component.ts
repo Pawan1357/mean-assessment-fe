@@ -85,4 +85,8 @@ export class UnderwritingComponent {
   ): string | null {
     return this.store.getServerFieldError(`tenants.${tenantIndex}.${key}`) ?? this.store.getServerFieldError(`tenants.${key}`);
   }
+
+  trackByTenantId(_index: number, tenant: Tenant): string {
+    return tenant.id;
+  }
 }

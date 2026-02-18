@@ -56,6 +56,22 @@ select,
   cursor: pointer;
 }
 
+.version-select {
+  min-width: 150px;
+  font-weight: 600;
+  color: var(--text);
+  border-color: #c9d4e4;
+  background: linear-gradient(180deg, #ffffff, #f7faff);
+  padding-right: 12px;
+  appearance: auto;
+}
+
+.version-select:focus {
+  outline: 2px solid #b8d8ff;
+  outline-offset: 1px;
+  border-color: #8abfff;
+}
+
 .btn {
   font-weight: 600;
 }

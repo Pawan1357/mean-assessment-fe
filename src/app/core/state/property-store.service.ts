@@ -54,6 +54,9 @@ export class PropertyStoreService {
     }
     const nextDraft = mutator(structuredClone(current));
     this.propertySubject.next(nextDraft);
+    if (this.validationErrorsSubject.value.length > 0) {
+      this.validationErrorsSubject.next(validatePropertyDraft(nextDraft));
+    }
     this.refreshDirtyState();
   }
 
