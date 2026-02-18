@@ -10,6 +10,22 @@ import { extractErrorMessage } from '../../core/utils/http-error.util';
 })
 export class PropertyDetailsComponent {
   actionError = '';
+  private readonly numericPropertyFields = new Set<keyof PropertyDetails>([
+    'lastTradePrice',
+    'askingPrice',
+    'bidAmount',
+    'yearOneCapRate',
+    'stabilizedCapRate',
+    'vintage',
+    'buildingSizeSf',
+    'warehouseSf',
+    'officeSf',
+    'propertySizeAcres',
+    'coverageRatio',
+    'clearHeightFt',
+    'dockDoors',
+    'driveInDoors',
+  ]);
 
   readonly leftInfoFields: Array<{ label: string; key: keyof PropertyDetails }> = [
     { label: 'Market', key: 'market' },
@@ -88,25 +104,16 @@ export class PropertyDetailsComponent {
   onDetailFieldChange(key: keyof PropertyDetails, event: Event) {
     this.store.clearServerFieldErrors([`propertyDetails.${String(key)}`]);
     const value = (event.target as HTMLInputElement).value;
-    const numericKeys = new Set<keyof PropertyDetails>([
-      'lastTradePrice',
-      'askingPrice',
-      'bidAmount',
-      'yearOneCapRate',
-      'stabilizedCapRate',
-      'vintage',
-      'buildingSizeSf',
-      'warehouseSf',
-      'officeSf',
-      'propertySizeAcres',
-      'coverageRatio',
-      'clearHeightFt',
-      'dockDoors',
-      'driveInDoors',
-    ]);
-
-    if (numericKeys.has(key)) {
-      this.store.updatePropertyDetailsField(key, Number(value || 0) as PropertyDetails[typeof key]);
+    if (this.numericPropertyFields.has(key)) {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return;
+      }
+      const parsed = Number(trimmed);
+      if (Number.isNaN(parsed)) {
+        return;
+      }
+      this.store.updatePropertyDetailsField(key, parsed as PropertyDetails[typeof key]);
       return;
     }
 
@@ -127,5 +134,12 @@ export class PropertyDetailsComponent {
 
   trackByBrokerId(_index: number, broker: Broker): string {
     return broker.id;
+  }
+
+  getFieldInputType(key: keyof PropertyDetails): 'text' | 'number' | 'date' {
+    if (key === 'lastTradeDate') {
+      return 'date';
+    }
+    return this.numericPropertyFields.has(key) ? 'number' : 'text';
   }
 }
