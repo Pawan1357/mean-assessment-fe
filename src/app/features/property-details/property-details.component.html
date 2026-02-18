@@ -8,6 +8,7 @@
       <input
         [type]="getFieldInputType(item.key)"
         [value]="property.propertyDetails[item.key]"
+        [class.invalid-field]="!!getPropertyFieldError(item.key)"
         [disabled]="item.key === 'address' || property.isHistorical"
         (input)="onDetailFieldChange(item.key, $event)"
       />
@@ -20,7 +21,7 @@
       <h3>Listing Details</h3>
       <div class="kv" *ngFor="let item of listingFields">
         <label>{{ item.label }}</label>
-        <input [type]="getFieldInputType(item.key)" [value]="property.propertyDetails[item.key]" [disabled]="property.isHistorical" (input)="onDetailFieldChange(item.key, $event)" />
+        <input [type]="getFieldInputType(item.key)" [value]="property.propertyDetails[item.key]" [class.invalid-field]="!!getPropertyFieldError(item.key)" [disabled]="property.isHistorical" (input)="onDetailFieldChange(item.key, $event)" />
         <div class="field-error" *ngIf="getPropertyFieldError(item.key)">{{ getPropertyFieldError(item.key) }}</div>
       </div>
     </section>
@@ -46,19 +47,19 @@
           <tr *ngFor="let broker of property.brokers; let brokerIndex = index; trackBy: trackByBrokerId">
             <ng-container *ngIf="!broker.isDeleted">
               <td>
-                <input [value]="broker.name" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'name', $event)" />
+                <input [value]="broker.name" [class.invalid-field]="!!getBrokerFieldErrorAtIndex(brokerIndex, 'name')" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'name', $event)" />
                 <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'name')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'name') }}</div>
               </td>
               <td>
-                <input type="tel" [value]="broker.phone" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'phone', $event)" />
+                <input type="tel" [value]="broker.phone" [class.invalid-field]="!!getBrokerFieldErrorAtIndex(brokerIndex, 'phone')" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'phone', $event)" />
                 <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'phone')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'phone') }}</div>
               </td>
               <td>
-                <input type="email" [value]="broker.email" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'email', $event)" />
+                <input type="email" [value]="broker.email" [class.invalid-field]="!!getBrokerFieldErrorAtIndex(brokerIndex, 'email')" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'email', $event)" />
                 <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'email')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'email') }}</div>
               </td>
               <td>
-                <input [value]="broker.company" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'company', $event)" />
+                <input [value]="broker.company" [class.invalid-field]="!!getBrokerFieldErrorAtIndex(brokerIndex, 'company')" [disabled]="property.isHistorical" (input)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'company', $event)" />
                 <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'company')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'company') }}</div>
               </td>
               <td class="actions-cell">
@@ -76,7 +77,7 @@
     <h3>Property Specs</h3>
     <div class="kv" *ngFor="let item of specsFields">
       <label>{{ item.label }}</label>
-      <input [type]="getFieldInputType(item.key)" [value]="property.propertyDetails[item.key]" [disabled]="property.isHistorical" (input)="onDetailFieldChange(item.key, $event)" />
+      <input [type]="getFieldInputType(item.key)" [value]="property.propertyDetails[item.key]" [class.invalid-field]="!!getPropertyFieldError(item.key)" [disabled]="property.isHistorical" (input)="onDetailFieldChange(item.key, $event)" />
       <div class="field-error" *ngIf="getPropertyFieldError(item.key)">{{ getPropertyFieldError(item.key) }}</div>
     </div>
   </section>

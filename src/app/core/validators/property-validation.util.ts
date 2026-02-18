@@ -8,40 +8,45 @@ function isValidDate(value: string): boolean {
 
 function ensureBrokerValid(broker: Broker, index: number, errors: string[]) {
   if (!broker.id) {
-    errors.push(`Broker ${index + 1}: missing id`);
+    errors.push(`Broker ${index + 1}: Internal ID is missing`);
   }
   if (!broker.name.trim()) {
-    errors.push(`Broker ${index + 1}: name is required`);
+    errors.push(`Broker ${index + 1}: Name is required`);
   }
   if (!broker.phone.trim()) {
-    errors.push(`Broker ${index + 1}: phone is required`);
+    errors.push(`Broker ${index + 1}: Phone number is required`);
+  }
+  if (broker.phone.trim() && !/^[0-9+\-()\s]+$/.test(broker.phone)) {
+    errors.push(`Broker ${index + 1}: Enter a valid phone number`);
   }
   if (!broker.company.trim()) {
-    errors.push(`Broker ${index + 1}: company is required`);
+    errors.push(`Broker ${index + 1}: Company name is required`);
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(broker.email)) {
-    errors.push(`Broker ${index + 1}: invalid email`);
+  if (!broker.email.trim()) {
+    errors.push(`Broker ${index + 1}: Email address is required`);
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(broker.email)) {
+    errors.push(`Broker ${index + 1}: Enter a valid email address`);
   }
 }
 
 function ensureTenantValid(tenant: Tenant, index: number, errors: string[]) {
   if (!tenant.id) {
-    errors.push(`Tenant ${index + 1}: missing id`);
+    errors.push(`Tenant ${index + 1}: Internal ID is missing`);
   }
   if (!tenant.tenantName.trim()) {
-    errors.push(`Tenant ${index + 1}: tenantName is required`);
+    errors.push(`Tenant ${index + 1}: Tenant name is required`);
   }
   if (tenant.squareFeet < 0) {
-    errors.push(`Tenant ${index + 1}: squareFeet must be >= 0`);
+    errors.push(`Tenant ${index + 1}: Square feet must be 0 or more`);
   }
   if (tenant.rentPsf < 0 || tenant.annualEscalations < 0 || tenant.tiPsf < 0 || tenant.lcPsf < 0) {
-    errors.push(`Tenant ${index + 1}: monetary fields must be >= 0`);
+    errors.push(`Tenant ${index + 1}: Rent, escalation, TI and LC values must be 0 or more`);
   }
   if (tenant.downtimeMonths < 0) {
-    errors.push(`Tenant ${index + 1}: downtimeMonths must be >= 0`);
+    errors.push(`Tenant ${index + 1}: Downtime must be 0 or more`);
   }
   if (!isValidDate(tenant.leaseStart) || !isValidDate(tenant.leaseEnd)) {
-    errors.push(`Tenant ${index + 1}: leaseStart/leaseEnd must be valid dates`);
+    errors.push(`Tenant ${index + 1}: Lease start and lease end must be valid dates`);
   }
 }
 
@@ -52,22 +57,23 @@ export function validatePropertyDraft(draft: PropertyVersion): string[] {
     errors.push('Property address is required');
   }
   if (draft.propertyDetails.buildingSizeSf <= 0) {
-    errors.push('Building size must be greater than 0');
+    errors.push('Building Size (SF) must be greater than 0');
   }
   if (!isValidDate(draft.underwritingInputs.estStartDate)) {
-    errors.push('Underwriting start date is invalid');
+    errors.push('Est Start Date is invalid');
   }
   if (draft.underwritingInputs.holdPeriodYears <= 0) {
-    errors.push('Hold period years must be greater than 0');
+    errors.push('Hold Period (Yrs) must be greater than 0');
   }
 
-  const brokerIds = draft.brokers.map((broker) => broker.id);
+  const activeBrokers = draft.brokers.filter((broker) => !broker.isDeleted);
+  const brokerIds = activeBrokers.map((broker) => broker.id);
   if (new Set(brokerIds).size !== brokerIds.length) {
     errors.push('Broker IDs must be unique');
   }
-  draft.brokers.forEach((broker, index) => ensureBrokerValid(broker, index, errors));
+  activeBrokers.forEach((broker, index) => ensureBrokerValid(broker, index, errors));
 
-  const activeTenants = draft.tenants.filter((tenant) => !tenant.isVacant);
+  const activeTenants = draft.tenants.filter((tenant) => !tenant.isVacant && !tenant.isDeleted);
   const tenantIds = activeTenants.map((tenant) => tenant.id);
   if (new Set(tenantIds).size !== tenantIds.length) {
     errors.push('Tenant IDs must be unique for non-vacant rows');
@@ -85,7 +91,8 @@ export function validatePropertyDraft(draft: PropertyVersion): string[] {
     errors.push('Total tenant square footage must be <= property space');
   }
 
-  for (const tenant of activeTenants.filter((candidate) => !candidate.isDeleted)) {
+  for (let index = 0; index < activeTenants.length; index += 1) {
+    const tenant = activeTenants[index];
     const leaseStart = new Date(tenant.leaseStart);
     const leaseEnd = new Date(tenant.leaseEnd);
     const propertyStart = new Date(draft.underwritingInputs.estStartDate);
@@ -93,10 +100,10 @@ export function validatePropertyDraft(draft: PropertyVersion): string[] {
     maxLeaseEnd.setFullYear(maxLeaseEnd.getFullYear() + draft.underwritingInputs.holdPeriodYears);
 
     if (leaseStart < propertyStart) {
-      errors.push(`Tenant ${tenant.tenantName}: lease start cannot be before property start`);
+      errors.push(`Tenant ${index + 1}: Lease start date cannot be before Est Start Date`);
     }
     if (leaseEnd > maxLeaseEnd) {
-      errors.push(`Tenant ${tenant.tenantName}: lease end cannot exceed start + hold period`);
+      errors.push(`Tenant ${index + 1}: Lease end date cannot exceed lease start + hold period`);
     }
   }
 

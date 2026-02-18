@@ -55,7 +55,9 @@ export class PropertyStoreService {
     const nextDraft = mutator(structuredClone(current));
     this.propertySubject.next(nextDraft);
     if (this.validationErrorsSubject.value.length > 0) {
-      this.validationErrorsSubject.next(validatePropertyDraft(nextDraft));
+      const validationErrors = validatePropertyDraft(nextDraft);
+      this.validationErrorsSubject.next(validationErrors);
+      this.serverFieldErrorsSubject.next(this.mapValidationErrorsToFieldErrors(validationErrors, nextDraft));
     }
     this.refreshDirtyState();
   }
@@ -282,6 +284,7 @@ export class PropertyStoreService {
     const validationErrors = validatePropertyDraft(current);
     this.validationErrorsSubject.next(validationErrors);
     if (validationErrors.length > 0) {
+      this.serverFieldErrorsSubject.next(this.mapValidationErrorsToFieldErrors(validationErrors, current));
       throw new Error(validationErrors.join(' | '));
     }
 
@@ -594,5 +597,71 @@ export class PropertyStoreService {
       return;
     }
     this.dirtySubject.next(JSON.stringify(current) !== JSON.stringify(persisted));
+  }
+
+  private mapValidationErrorsToFieldErrors(validationErrors: string[], draft: PropertyVersion): Record<string, string> {
+    const fieldErrors: Record<string, string> = {};
+    const activeBrokers = draft.brokers.filter((broker) => !broker.isDeleted);
+    const activeTenants = draft.tenants.filter((tenant) => !tenant.isDeleted && !tenant.isVacant);
+
+    for (const message of validationErrors) {
+      if (message.includes('Building Size (SF)')) {
+        fieldErrors['propertyDetails.buildingSizeSf'] = message;
+      } else if (message.includes('Est Start Date is invalid')) {
+        fieldErrors['underwritingInputs.estStartDate'] = message;
+      } else if (message.includes('Hold Period (Yrs)')) {
+        fieldErrors['underwritingInputs.holdPeriodYears'] = message;
+      } else if (message.includes('Total tenant square footage')) {
+        fieldErrors['tenants.squareFeet'] = message;
+      }
+
+      const brokerMatch = message.match(/^Broker (\d+): (.+)$/);
+      if (brokerMatch) {
+        const brokerNumber = Number(brokerMatch[1]);
+        const broker = activeBrokers[brokerNumber - 1];
+        if (!broker) {
+          continue;
+        }
+        const brokerIndex = draft.brokers.findIndex((item) => item.id === broker.id);
+        const detail = brokerMatch[2].toLowerCase();
+        if (detail.includes('name')) {
+          fieldErrors[`brokers.${brokerIndex}.name`] = message;
+        } else if (detail.includes('phone')) {
+          fieldErrors[`brokers.${brokerIndex}.phone`] = message;
+        } else if (detail.includes('email')) {
+          fieldErrors[`brokers.${brokerIndex}.email`] = message;
+        } else if (detail.includes('company')) {
+          fieldErrors[`brokers.${brokerIndex}.company`] = message;
+        }
+      }
+
+      const tenantMatch = message.match(/^Tenant (\d+): (.+)$/);
+      if (tenantMatch) {
+        const tenantNumber = Number(tenantMatch[1]);
+        const tenant = activeTenants[tenantNumber - 1];
+        if (!tenant) {
+          continue;
+        }
+        const tenantIndex = draft.tenants.findIndex((item) => item.id === tenant.id);
+        const detail = tenantMatch[2].toLowerCase();
+        if (detail.includes('tenant name')) {
+          fieldErrors[`tenants.${tenantIndex}.tenantName`] = message;
+        } else if (detail.includes('square feet')) {
+          fieldErrors[`tenants.${tenantIndex}.squareFeet`] = message;
+        } else if (detail.includes('rent')) {
+          fieldErrors[`tenants.${tenantIndex}.rentPsf`] = message;
+        } else if (detail.includes('escalation')) {
+          fieldErrors[`tenants.${tenantIndex}.annualEscalations`] = message;
+        } else if (detail.includes('downtime')) {
+          fieldErrors[`tenants.${tenantIndex}.downtimeMonths`] = message;
+        } else if (detail.includes('lease start')) {
+          fieldErrors[`tenants.${tenantIndex}.leaseStart`] = message;
+        } else if (detail.includes('lease end')) {
+          fieldErrors[`tenants.${tenantIndex}.leaseEnd`] = message;
+        }
+      }
+    }
+
+    return fieldErrors;
   }
 }
