@@ -1,80 +1,44 @@
 # Assessment Frontend (Angular)
 
-## 1) Purpose
-This app implements the assessment UI for a versioned property underwriting workflow.
+## Purpose
 
-It focuses on:
-- clean Angular feature-oriented architecture
-- shared state across tabs
-- strict integration with backend REST APIs
-- save/save-as version workflows
-- validation UX + backend error surfacing
+Two-tab UI for the assessment (`Property Details`, `Underwriting`) with shared draft state and version-aware save workflows.
 
----
+## Current Architecture
 
-## 2) Deliverables Coverage (from `requirements.txt`)
-Implemented in frontend:
-- two-tab experience (`Property Details`, `Underwriting`) on shared property state
-- editable fields (except address)
-- broker CRUD UI
-- tenant CRUD UI + read-only lease abstract in property details
-- Save and Save As actions
-- unsaved changes warning on navigation and browser refresh/close
-- backend validation/success message handling in UI
-- historical versions rendered read-only
+- `src/app/core`: API client, state store, guards, validators, models, error parsing.
+- `src/app/features/shell`: tabs, version selector, main save/save-as, top-level success/error banners.
+- `src/app/features/property-details`: property fields, broker CRUD, lease abstract view.
+- `src/app/features/underwriting`: underwriting inputs, tenant CRUD.
+- `src/app/shared`: shared Angular imports.
 
----
+State management:
 
-## 3) Tech Stack
-- Angular 18
-- RxJS
-- Jasmine + Karma
+- `PropertyStoreService` is the single source of truth for loaded version, draft edits, dirty state, validation, and server field errors.
 
----
+## Behavior Implemented
 
-## 4) Frontend Architecture
+- Shared state across tabs without losing unsaved edits.
+- Main `Save` sends one combined payload for both tabs.
+- Main `Save As` sends current form snapshot and creates next version.
+- Historical versions are read-only in UI.
+- Broker and tenant row-level create/update/delete actions.
+- Unsaved change warnings on route navigation and browser refresh/close.
+- Backend success/error messages are surfaced in UI.
 
-### Modules
-- `src/app/core`: app-wide state, API services, guards, validators, models
-- `src/app/features/shell`: top nav, version selector, save actions, banners
-- `src/app/features/property-details`: property detail + broker UI + lease abstract
-- `src/app/features/underwriting`: underwriting assumptions + tenant UI
-- `src/app/shared`: shared Angular imports
+## Backend Contract Used
 
-### State Management
-`PropertyStoreService` is the single source of truth for:
-- selected property version snapshot
-- unsaved draft changes across tabs
-- versions list
-- dirty flag
-- client validation errors
-- backend field-level errors
-
----
-
-## 5) Behavior Summary
-- Switching tabs does not lose unsaved edits.
-- Save sends full payload from both tabs.
-- Save As sends full current form snapshot and creates a new version.
-- Historical versions are non-editable in UI.
-- Broker/Tenant row actions call dedicated APIs.
-- Success banner auto-hides.
-- Backend errors show in banner and mapped field-level hints (where possible).
-
----
-
-## 6) Backend API Contract Used
 Base path: `/api/properties`
 
-Used endpoints:
 - `GET /:propertyId/versions`
 - `GET /:propertyId/versions/:version`
 - `PUT /:propertyId/versions/:version`
 - `POST /:propertyId/versions/:version/save-as`
-- `POST/PUT/DELETE brokers`
-- `POST/PUT/DELETE tenants`
+- `POST|PUT|DELETE /:propertyId/versions/:version/brokers...`
+- `POST|PUT|DELETE /:propertyId/versions/:version/tenants...`
 
-Response envelope expected:
+Expected response envelope:
+
 ```json
 {
   "success": true,
@@ -83,56 +47,25 @@ Response envelope expected:
 }
 ```
 
----
+## Local Run
 
-## 7) Local Setup
+1. Ensure backend is running on `http://localhost:3000`.
+2. `npm install`
+3. `npm start`
+4. Open `http://localhost:4200`
 
-### Prerequisites
-- Node.js 20+
-- Backend running on `http://localhost:3000`
+API proxy:
 
-### Steps
-1. `npm install`
-2. `npm start`
-3. Open `http://localhost:4200`
+- `src/environments/environment.ts` has `apiBaseUrl: ''`
+- `proxy.conf.json` forwards `/api` to backend
 
-### API Base URL / Proxy
-- `src/environments/environment.ts` uses `apiBaseUrl: ''`
-- Angular dev server proxy forwards `/api` to `http://localhost:3000`
-- Proxy config: `proxy.conf.json`
+## Testing
 
----
-
-## 8) Validation Handling
-
-### Client-side
-- Draft-level rules in `core/validators/property-validation.util.ts`
-- Immediate input-level restrictions for number/date fields where applicable
-
-### Server-side (authoritative)
-- All business rules and DTO constraints are enforced by backend.
-- UI displays backend messages and field hints from server responses.
-
----
-
-## 9) Key User Flows
-1. Load latest version.
-2. Edit fields in both tabs.
-3. Save current version.
-4. Save As new semantic version.
-5. Manage brokers/tenants.
-6. Review read-only historical versions.
-
----
-
-## 10) Testing
 - Unit tests + coverage: `npm test`
 - Production build: `npm run build`
 
----
+## Assumptions
 
-## 11) Assumptions
 - Single-user assessment mode.
-- Auth/roles are out of scope.
-- Backend is source of truth for final validation and persistence.
-- Error-to-field mapping is best-effort based on backend error message format.
+- Auth and roles are out of scope.
+- Backend is authoritative for final validation and persistence.
