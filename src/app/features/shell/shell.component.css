@@ -3,18 +3,19 @@
   --surface: #ffffff;
   --line: #d9e0ea;
   --text: #243047;
+  --muted: #5d6b82;
   --primary: #1e88ff;
 }
 
 .app-shell {
   min-height: 100vh;
-  background: radial-gradient(circle at top right, #dfe8f5 0, var(--bg) 50%);
+  background: linear-gradient(180deg, #f6f8fc, var(--bg));
   color: var(--text);
   font-family: "Segoe UI", "Helvetica Neue", sans-serif;
 }
 
 .topbar {
-  padding: 16px 20px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
   display: flex;
@@ -29,7 +30,7 @@
 
 .tabs a {
   text-decoration: none;
-  color: #586071;
+  color: var(--muted);
   font-weight: 600;
   padding-bottom: 8px;
 }
@@ -41,23 +42,15 @@
 
 .actions {
   display: flex;
+  align-items: center;
   gap: 10px;
 }
 
-.error-banner {
-  margin: 12px 16px 0;
-  padding: 10px 12px;
-  border-radius: 6px;
-  border: 1px solid #ef9a9a;
-  background: #fdecec;
-  color: #8a1f1f;
-  font-size: 13px;
-}
-
+select,
 button {
   border: 1px solid var(--line);
   background: var(--surface);
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
 }
@@ -66,6 +59,26 @@ button.primary {
   color: #fff;
   background: var(--primary);
   border-color: var(--primary);
+}
+
+.error-banner,
+.validation-banner {
+  margin: 12px 16px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.error-banner {
+  border: 1px solid #ef9a9a;
+  background: #fdecec;
+  color: #8a1f1f;
+}
+
+.validation-banner {
+  border: 1px solid #f6d78b;
+  background: #fff7df;
+  color: #714f00;
 }
 
 main {

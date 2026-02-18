@@ -112,7 +112,8 @@ describe('PropertyStoreService', () => {
   let store: PropertyStoreService;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<PropertyApiService>('PropertyApiService', ['getVersion', 'saveVersion', 'saveAs']);
+    api = jasmine.createSpyObj<PropertyApiService>('PropertyApiService', ['getVersion', 'saveVersion', 'saveAs', 'getVersions']);
+    api.getVersions.and.returnValue(of([]));
     store = new PropertyStoreService(api);
   });
 
@@ -122,6 +123,14 @@ describe('PropertyStoreService', () => {
     store.loadVersion('1.1').subscribe(() => {
       expect(api.getVersion).toHaveBeenCalledWith('property-1', '1.1');
       expect(store.hasUnsavedChanges()).toBeFalse();
+      done();
+    });
+  });
+
+  it('loads versions', (done) => {
+    api.getVersions.and.returnValue(of([{ version: '1.1', revision: 0, isHistorical: false }] as any));
+    store.loadVersions().subscribe((versions) => {
+      expect(versions[0].version).toBe('1.1');
       done();
     });
   });
@@ -146,6 +155,25 @@ describe('PropertyStoreService', () => {
         }
         expect(value.propertyDetails.market).toBe('B');
         expect(store.hasUnsavedChanges()).toBeTrue();
+        done();
+      });
+    });
+  });
+
+  it('supports broker and tenant draft mutations', (done) => {
+    api.getVersion.and.returnValue(of(baseProperty));
+    store.loadVersion().subscribe(() => {
+      store.addBroker();
+      store.addTenant();
+      store.deleteBroker('b1');
+      store.deleteTenant('t1');
+
+      store.property$.subscribe((value) => {
+        if (!value) {
+          return;
+        }
+        expect(value.brokers.length).toBeGreaterThan(1);
+        expect(value.tenants.filter((t: any) => !t.isVacant).length).toBeGreaterThan(1);
         done();
       });
     });

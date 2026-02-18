@@ -1,8 +1,51 @@
-.panel {
+.card {
   background: #fff;
   border: 1px solid #d9e0ea;
   border-radius: 8px;
-  padding: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.assumptions-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 11px;
+  color: #5d6b82;
+}
+
+input,
+select,
+button {
+  border: 1px solid #d3dae8;
+  border-radius: 6px;
+  padding: 7px 8px;
+  font-size: 12px;
+}
+
+button {
+  cursor: pointer;
+  background: #fff;
+}
+
+button.danger {
+  color: #b32222;
+  border-color: #efb3b3;
 }
 
 table {
@@ -12,15 +55,20 @@ table {
 
 th,
 td {
-  border-bottom: 1px solid #edf1f7;
-  padding: 8px;
+  font-size: 12px;
   text-align: left;
-  font-size: 13px;
+  border-bottom: 1px solid #edf1f7;
+  padding: 8px 6px;
 }
 
-input {
-  width: 100%;
-  border: 1px solid #cfd6e3;
-  border-radius: 6px;
-  padding: 6px;
+@media (max-width: 1280px) {
+  .assumptions-grid {
+    grid-template-columns: repeat(3, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .assumptions-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
 }

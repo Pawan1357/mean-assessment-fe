@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { Broker, PropertyDetails } from '../../core/models/property.model';
 import { PropertyStoreService } from '../../core/state/property-store.service';
 
 @Component({
@@ -8,43 +8,81 @@ import { PropertyStoreService } from '../../core/state/property-store.service';
   styleUrls: ['./property-details.component.css'],
 })
 export class PropertyDetailsComponent {
-  readonly form;
+  readonly leftInfoFields: Array<{ label: string; key: keyof PropertyDetails }> = [
+    { label: 'Market', key: 'market' },
+    { label: 'Sub Market', key: 'subMarket' },
+    { label: 'Property Type', key: 'propertyType' },
+    { label: 'Property Sub Type', key: 'propertySubType' },
+    { label: 'Zoning', key: 'zoning' },
+    { label: 'Zoning Details', key: 'zoningDetails' },
+    { label: 'Listing Type', key: 'listingType' },
+    { label: 'Business Plan', key: 'businessPlan' },
+    { label: 'Seller Type', key: 'sellerType' },
+    { label: 'Last Trade Date', key: 'lastTradeDate' },
+  ];
 
-  constructor(
-    private readonly fb: FormBuilder,
-    public readonly store: PropertyStoreService,
-  ) {
-    this.form = this.fb.group({
-      market: ['', Validators.required],
-      subMarket: ['', Validators.required],
-      propertyType: ['', Validators.required],
-      buildingSizeSf: [0, [Validators.required, Validators.min(1)]],
-    });
+  readonly listingFields: Array<{ label: string; key: keyof PropertyDetails }> = [
+    { label: 'Asking Price', key: 'askingPrice' },
+    { label: 'Bid Amount', key: 'bidAmount' },
+    { label: 'Year 1 Cap Rate', key: 'yearOneCapRate' },
+    { label: 'Stabilized Cap Rate', key: 'stabilizedCapRate' },
+  ];
 
-    this.store.property$.subscribe((property) => {
-      if (!property) {
-        return;
-      }
+  readonly specsFields: Array<{ label: string; key: keyof PropertyDetails }> = [
+    { label: 'Vintage', key: 'vintage' },
+    { label: 'Building Size (SF)', key: 'buildingSizeSf' },
+    { label: 'Warehouse (SF)', key: 'warehouseSf' },
+    { label: 'Office (SF)', key: 'officeSf' },
+    { label: 'Property Size (Acres)', key: 'propertySizeAcres' },
+    { label: 'Coverage Ratio', key: 'coverageRatio' },
+    { label: 'Outdoor Storage', key: 'outdoorStorage' },
+    { label: 'Construction Type', key: 'constructionType' },
+    { label: 'Clear Height (Ft)', key: 'clearHeightFt' },
+    { label: 'Dock Doors', key: 'dockDoors' },
+    { label: 'Drive-In Doors', key: 'driveInDoors' },
+    { label: 'Heavy Power', key: 'heavyPower' },
+    { label: 'Sprinkler Type', key: 'sprinklerType' },
+  ];
 
-      this.form.patchValue({
-        market: property.propertyDetails.market,
-        subMarket: property.propertyDetails.subMarket,
-        propertyType: property.propertyDetails.propertyType,
-        buildingSizeSf: property.propertyDetails.buildingSizeSf,
-      }, { emitEvent: false });
-    });
+  constructor(public readonly store: PropertyStoreService) {}
 
-    this.form.valueChanges.subscribe((value) => {
-      this.store.patchDraft((draft) => ({
-        ...draft,
-        propertyDetails: {
-          ...draft.propertyDetails,
-          market: value.market ?? draft.propertyDetails.market,
-          subMarket: value.subMarket ?? draft.propertyDetails.subMarket,
-          propertyType: value.propertyType ?? draft.propertyDetails.propertyType,
-          buildingSizeSf: value.buildingSizeSf ?? draft.propertyDetails.buildingSizeSf,
-        },
-      }));
-    });
+  onAddBroker() {
+    this.store.addBroker();
+  }
+
+  onDeleteBroker(brokerId: string) {
+    this.store.deleteBroker(brokerId);
+  }
+
+  onBrokerFieldChange(broker: Broker, key: keyof Broker, event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.store.updateBrokerField(broker.id, key, value);
+  }
+
+  onDetailFieldChange(key: keyof PropertyDetails, event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    const numericKeys = new Set<keyof PropertyDetails>([
+      'lastTradePrice',
+      'askingPrice',
+      'bidAmount',
+      'yearOneCapRate',
+      'stabilizedCapRate',
+      'vintage',
+      'buildingSizeSf',
+      'warehouseSf',
+      'officeSf',
+      'propertySizeAcres',
+      'coverageRatio',
+      'clearHeightFt',
+      'dockDoors',
+      'driveInDoors',
+    ]);
+
+    if (numericKeys.has(key)) {
+      this.store.updatePropertyDetailsField(key, Number(value || 0) as PropertyDetails[typeof key]);
+      return;
+    }
+
+    this.store.updatePropertyDetailsField(key, value as PropertyDetails[typeof key]);
   }
 }

@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Tenant, UnderwritingInputs } from '../../core/models/property.model';
 import { PropertyStoreService } from '../../core/state/property-store.service';
 
 @Component({
@@ -7,17 +8,47 @@ import { PropertyStoreService } from '../../core/state/property-store.service';
   styleUrls: ['./underwriting.component.css'],
 })
 export class UnderwritingComponent {
+  readonly assumptionsFields: Array<{ label: string; key: keyof UnderwritingInputs; type: 'number' | 'date' }> = [
+    { label: 'List Price', key: 'listPrice', type: 'number' },
+    { label: 'Bid', key: 'bid', type: 'number' },
+    { label: 'GP Equity Stack', key: 'gpEquityStack', type: 'number' },
+    { label: 'LP Equity Stack', key: 'lpEquityStack', type: 'number' },
+    { label: 'Acq Fee', key: 'acqFee', type: 'number' },
+    { label: 'AM Fee', key: 'amFee', type: 'number' },
+    { label: 'Promote', key: 'promote', type: 'number' },
+    { label: 'Pref Hurdle', key: 'prefHurdle', type: 'number' },
+    { label: 'Property Mgmt Fee', key: 'propMgmtFee', type: 'number' },
+    { label: 'Est Start Date', key: 'estStartDate', type: 'date' },
+    { label: 'Hold Period (Yrs)', key: 'holdPeriodYears', type: 'number' },
+    { label: 'Closing Costs %', key: 'closingCostsPct', type: 'number' },
+    { label: 'Sale Costs %', key: 'saleCostsPct', type: 'number' },
+    { label: 'Vacancy %', key: 'vacancyPct', type: 'number' },
+    { label: 'Annual Capex Res %', key: 'annualCapexReservesPct', type: 'number' },
+    { label: 'Annual Admin Exp %', key: 'annualAdminExpPct', type: 'number' },
+    { label: 'Expense Inflation %', key: 'expenseInflationPct', type: 'number' },
+    { label: 'Exit Cap Rate', key: 'exitCapRate', type: 'number' },
+  ];
+
   constructor(public readonly store: PropertyStoreService) {}
 
-  onSquareFeetChange(tenantId: string, value: number) {
-    if (!Number.isFinite(value) || value < 0) {
-      return;
-    }
-    this.store.patchDraft((draft) => ({
-      ...draft,
-      tenants: draft.tenants.map((tenant) =>
-        tenant.id === tenantId && !tenant.isVacant && !tenant.isDeleted ? { ...tenant, squareFeet: value } : tenant,
-      ),
-    }));
+  onAddTenant() {
+    this.store.addTenant();
+  }
+
+  onDeleteTenant(tenantId: string) {
+    this.store.deleteTenant(tenantId);
+  }
+
+  onUnderwritingFieldChange(key: keyof UnderwritingInputs, event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = input.type === 'date' ? input.value : Number(input.value || 0);
+    this.store.updateUnderwritingField(key, value as UnderwritingInputs[typeof key]);
+  }
+
+  onTenantFieldChange<K extends keyof Tenant>(tenant: Tenant, key: K, event: Event) {
+    const input = event.target as HTMLInputElement | HTMLSelectElement;
+    const numericFields = new Set<keyof Tenant>(['squareFeet', 'rentPsf', 'annualEscalations', 'downtimeMonths', 'tiPsf', 'lcPsf']);
+    const value = numericFields.has(key) ? Number(input.value || 0) : input.value;
+    this.store.updateTenantField(tenant.id, key, value as Tenant[K]);
   }
 }

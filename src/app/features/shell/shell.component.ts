@@ -1,4 +1,5 @@
 import { Component, HostListener, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { PropertyStoreService } from '../../core/state/property-store.service';
 
 @Component({
@@ -8,14 +9,19 @@ import { PropertyStoreService } from '../../core/state/property-store.service';
 })
 export class ShellComponent implements OnInit {
   errorMessage = '';
+  validationErrors: string[] = [];
 
   constructor(public readonly store: PropertyStoreService) {}
 
   ngOnInit(): void {
-    this.store.loadVersion().subscribe({
+    forkJoin([this.store.loadVersions(), this.store.loadVersion()]).subscribe({
       error: (error: unknown) => {
         this.errorMessage = this.extractErrorMessage(error);
       },
+    });
+
+    this.store.validationErrors$.subscribe((errors) => {
+      this.validationErrors = errors;
     });
   }
 
@@ -27,9 +33,28 @@ export class ShellComponent implements OnInit {
     }
   }
 
+  onVersionChange(version: string) {
+    if (!version) {
+      return;
+    }
+
+    if (this.store.hasUnsavedChanges() && !window.confirm('You have unsaved changes. Switch version anyway?')) {
+      return;
+    }
+
+    this.store.loadVersion(version).subscribe({
+      error: (error: unknown) => {
+        this.errorMessage = this.extractErrorMessage(error);
+      },
+    });
+  }
+
   onSave() {
     try {
       this.store.saveCurrent().subscribe({
+        next: () => {
+          this.errorMessage = '';
+        },
         error: (error: unknown) => {
           this.errorMessage = this.extractErrorMessage(error);
         },
@@ -41,6 +66,9 @@ export class ShellComponent implements OnInit {
 
   onSaveAs() {
     this.store.saveAsNextVersion().subscribe({
+      next: () => {
+        this.errorMessage = '';
+      },
       error: (error: unknown) => {
         this.errorMessage = this.extractErrorMessage(error);
       },
