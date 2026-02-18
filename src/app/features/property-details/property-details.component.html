@@ -1,0 +1,55 @@
+<section class="panel" *ngIf="store.property$ | async as property" [formGroup]="form">
+  <h2>Property Details</h2>
+  <div class="grid">
+    <label>
+      Address
+      <input [value]="property.propertyDetails.address" disabled />
+    </label>
+    <label>
+      Market
+      <input formControlName="market" />
+    </label>
+    <label>
+      Sub Market
+      <input formControlName="subMarket" />
+    </label>
+    <label>
+      Property Type
+      <input formControlName="propertyType" />
+    </label>
+    <label>
+      Building Size (SF)
+      <input type="number" formControlName="buildingSizeSf" />
+    </label>
+  </div>
+
+  <h3>Broker Info</h3>
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Company</th><th>Email</th><th>Phone</th></tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let broker of property.brokers">
+        <td>{{ broker.name }}</td>
+        <td>{{ broker.company }}</td>
+        <td>{{ broker.email }}</td>
+        <td>{{ broker.phone }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Lease Abstract</h3>
+  <table>
+    <thead>
+      <tr><th>Tenant</th><th>SF Occupied</th><th>Rent PSF</th><th>Lease Type</th></tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let tenant of property.tenants">
+        <td>{{ tenant.tenantName }}</td>
+        <td>{{ tenant.squareFeet }}</td>
+        <td>{{ tenant.rentPsf }}</td>
+        <td>{{ tenant.leaseType }}</td>
+      </tr>
+    </tbody>
+  </table>
+</section>

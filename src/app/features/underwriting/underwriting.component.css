@@ -1,0 +1,26 @@
+.panel {
+  background: #fff;
+  border: 1px solid #d9e0ea;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid #edf1f7;
+  padding: 8px;
+  text-align: left;
+  font-size: 13px;
+}
+
+input {
+  width: 100%;
+  border: 1px solid #cfd6e3;
+  border-radius: 6px;
+  padding: 6px;
+}

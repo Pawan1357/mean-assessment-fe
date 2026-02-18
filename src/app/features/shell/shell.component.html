@@ -1,0 +1,18 @@
+<div class="app-shell">
+  <header class="topbar">
+    <nav class="tabs">
+      <a routerLink="/property-details" routerLinkActive="active">Property Details</a>
+      <a routerLink="/underwriting" routerLinkActive="active">Underwriting</a>
+    </nav>
+    <div class="actions">
+      <button type="button" (click)="onSaveAs()">Save As</button>
+      <button type="button" class="primary" (click)="onSave()">Save</button>
+    </div>
+  </header>
+  <section class="error-banner" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </section>
+  <main>
+    <router-outlet></router-outlet>
+  </main>
+</div>
