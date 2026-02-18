@@ -61,12 +61,14 @@ export class UnderwritingComponent {
   }
 
   onUnderwritingFieldChange(key: keyof UnderwritingInputs, event: Event) {
+    this.store.clearServerFieldErrors([`underwritingInputs.${String(key)}`]);
     const input = event.target as HTMLInputElement;
     const value = input.type === 'date' ? input.value : Number(input.value || 0);
     this.store.updateUnderwritingField(key, value as UnderwritingInputs[typeof key]);
   }
 
-  onTenantFieldChange<K extends keyof Tenant>(tenant: Tenant, key: K, event: Event) {
+  onTenantFieldChange<K extends keyof Tenant>(tenant: Tenant, tenantIndex: number, key: K, event: Event) {
+    this.store.clearServerFieldErrors([`tenants.${tenantIndex}.${String(key)}`, `tenants.${String(key)}`]);
     const input = event.target as HTMLInputElement | HTMLSelectElement;
     const numericFields = new Set<keyof Tenant>(['squareFeet', 'rentPsf', 'annualEscalations', 'downtimeMonths', 'tiPsf', 'lcPsf']);
     const value = numericFields.has(key) ? Number(input.value || 0) : input.value;
@@ -77,7 +79,10 @@ export class UnderwritingComponent {
     return this.store.getServerFieldError(`underwritingInputs.${String(key)}`);
   }
 
-  getTenantFieldError(key: 'tenantName' | 'creditType' | 'squareFeet' | 'rentPsf' | 'annualEscalations' | 'leaseStart' | 'leaseEnd' | 'leaseType' | 'renew' | 'downtimeMonths' | 'tiPsf' | 'lcPsf'): string | null {
-    return this.store.getServerFieldError(`tenants.${key}`);
+  getTenantFieldError(
+    tenantIndex: number,
+    key: 'tenantName' | 'creditType' | 'squareFeet' | 'rentPsf' | 'annualEscalations' | 'leaseStart' | 'leaseEnd' | 'leaseType' | 'renew' | 'downtimeMonths' | 'tiPsf' | 'lcPsf',
+  ): string | null {
+    return this.store.getServerFieldError(`tenants.${tenantIndex}.${key}`) ?? this.store.getServerFieldError(`tenants.${key}`);
   }
 }

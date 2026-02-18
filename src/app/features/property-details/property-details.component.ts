@@ -80,7 +80,13 @@ export class PropertyDetailsComponent {
     this.store.updateBrokerField(broker.id, key, value);
   }
 
+  onBrokerFieldChangeWithIndex(broker: Broker, brokerIndex: number, key: keyof Broker, event: Event) {
+    this.store.clearServerFieldErrors([`brokers.${brokerIndex}.${String(key)}`, `brokers.${String(key)}`]);
+    this.onBrokerFieldChange(broker, key, event);
+  }
+
   onDetailFieldChange(key: keyof PropertyDetails, event: Event) {
+    this.store.clearServerFieldErrors([`propertyDetails.${String(key)}`]);
     const value = (event.target as HTMLInputElement).value;
     const numericKeys = new Set<keyof PropertyDetails>([
       'lastTradePrice',
@@ -113,5 +119,9 @@ export class PropertyDetailsComponent {
 
   getBrokerFieldError(key: 'name' | 'phone' | 'email' | 'company'): string | null {
     return this.store.getServerFieldError(`brokers.${key}`);
+  }
+
+  getBrokerFieldErrorAtIndex(brokerIndex: number, key: 'name' | 'phone' | 'email' | 'company'): string | null {
+    return this.store.getServerFieldError(`brokers.${brokerIndex}.${key}`) ?? this.getBrokerFieldError(key);
   }
 }

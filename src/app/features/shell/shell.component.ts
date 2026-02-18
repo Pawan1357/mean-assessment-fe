@@ -13,6 +13,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   successMessage = '';
   validationErrors: string[] = [];
   private successTimer: ReturnType<typeof setTimeout> | null = null;
+  private errorTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(public readonly store: PropertyStoreService) {}
 
@@ -37,11 +38,6 @@ export class ShellComponent implements OnInit, OnDestroy {
       this.validationErrors = errors;
     });
 
-    this.store.serverFieldErrors$.subscribe((fieldErrors) => {
-      if (Object.keys(fieldErrors).length === 0) {
-        this.errorMessage = '';
-      }
-    });
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -56,6 +52,10 @@ export class ShellComponent implements OnInit, OnDestroy {
     if (this.successTimer) {
       clearTimeout(this.successTimer);
       this.successTimer = null;
+    }
+    if (this.errorTimer) {
+      clearTimeout(this.errorTimer);
+      this.errorTimer = null;
     }
   }
 
@@ -79,7 +79,7 @@ export class ShellComponent implements OnInit, OnDestroy {
       },
       error: (error: unknown) => {
         this.store.setServerErrors(error);
-        this.errorMessage = extractErrorMessage(error);
+        this.setErrorMessage(extractErrorMessage(error), this.store.hasServerFieldErrors());
         this.successMessage = '';
       },
     });
@@ -94,12 +94,12 @@ export class ShellComponent implements OnInit, OnDestroy {
         },
         error: (error: unknown) => {
           this.store.setServerErrors(error);
-          this.errorMessage = extractErrorMessage(error);
+          this.setErrorMessage(extractErrorMessage(error), this.store.hasServerFieldErrors());
           this.successMessage = '';
         },
       });
     } catch (error) {
-      this.errorMessage = extractErrorMessage(error);
+      this.setErrorMessage(extractErrorMessage(error), this.store.hasServerFieldErrors());
       this.successMessage = '';
     }
   }
@@ -113,12 +113,12 @@ export class ShellComponent implements OnInit, OnDestroy {
         },
         error: (error: unknown) => {
           this.store.setServerErrors(error);
-          this.errorMessage = extractErrorMessage(error);
+          this.setErrorMessage(extractErrorMessage(error), this.store.hasServerFieldErrors());
           this.successMessage = '';
         },
       });
     } catch (error) {
-      this.errorMessage = extractErrorMessage(error);
+      this.setErrorMessage(extractErrorMessage(error), this.store.hasServerFieldErrors());
       this.successMessage = '';
     }
   }
@@ -132,5 +132,19 @@ export class ShellComponent implements OnInit, OnDestroy {
       this.successMessage = '';
       this.successTimer = null;
     }, 3500);
+  }
+
+  private setErrorMessage(message: string, isFieldError: boolean) {
+    this.errorMessage = message;
+    if (this.errorTimer) {
+      clearTimeout(this.errorTimer);
+      this.errorTimer = null;
+    }
+    if (!isFieldError) {
+      this.errorTimer = setTimeout(() => {
+        this.errorMessage = '';
+        this.errorTimer = null;
+      }, 4500);
+    }
   }
 }

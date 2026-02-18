@@ -42,23 +42,23 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let broker of property.brokers">
+          <tr *ngFor="let broker of property.brokers; let brokerIndex = index">
             <ng-container *ngIf="!broker.isDeleted">
               <td>
-                <input [value]="broker.name" [disabled]="property.isHistorical" (change)="onBrokerFieldChange(broker, 'name', $event)" />
-                <div class="field-error" *ngIf="getBrokerFieldError('name')">{{ getBrokerFieldError('name') }}</div>
+                <input [value]="broker.name" [disabled]="property.isHistorical" (change)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'name', $event)" />
+                <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'name')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'name') }}</div>
               </td>
               <td>
-                <input [value]="broker.phone" [disabled]="property.isHistorical" (change)="onBrokerFieldChange(broker, 'phone', $event)" />
-                <div class="field-error" *ngIf="getBrokerFieldError('phone')">{{ getBrokerFieldError('phone') }}</div>
+                <input [value]="broker.phone" [disabled]="property.isHistorical" (change)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'phone', $event)" />
+                <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'phone')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'phone') }}</div>
               </td>
               <td>
-                <input [value]="broker.email" [disabled]="property.isHistorical" (change)="onBrokerFieldChange(broker, 'email', $event)" />
-                <div class="field-error" *ngIf="getBrokerFieldError('email')">{{ getBrokerFieldError('email') }}</div>
+                <input [value]="broker.email" [disabled]="property.isHistorical" (change)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'email', $event)" />
+                <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'email')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'email') }}</div>
               </td>
               <td>
-                <input [value]="broker.company" [disabled]="property.isHistorical" (change)="onBrokerFieldChange(broker, 'company', $event)" />
-                <div class="field-error" *ngIf="getBrokerFieldError('company')">{{ getBrokerFieldError('company') }}</div>
+                <input [value]="broker.company" [disabled]="property.isHistorical" (change)="onBrokerFieldChangeWithIndex(broker, brokerIndex, 'company', $event)" />
+                <div class="field-error" *ngIf="getBrokerFieldErrorAtIndex(brokerIndex, 'company')">{{ getBrokerFieldErrorAtIndex(brokerIndex, 'company') }}</div>
               </td>
               <td class="actions-cell">
                 <button type="button" class="btn btn-primary" [disabled]="!store.canSaveBroker(broker.id)" (click)="onSaveBroker(broker.id)">Save</button>

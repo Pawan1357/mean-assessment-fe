@@ -54,7 +54,6 @@ export class PropertyStoreService {
     }
     const nextDraft = mutator(structuredClone(current));
     this.propertySubject.next(nextDraft);
-    this.serverFieldErrorsSubject.next({});
     this.refreshDirtyState();
   }
 
@@ -391,6 +390,18 @@ export class PropertyStoreService {
 
   getServerFieldError(path: string): string | null {
     return this.serverFieldErrorsSubject.value[path] ?? null;
+  }
+
+  clearServerFieldErrors(paths: string[]) {
+    const current = { ...this.serverFieldErrorsSubject.value };
+    for (const path of paths) {
+      delete current[path];
+    }
+    this.serverFieldErrorsSubject.next(current);
+  }
+
+  hasServerFieldErrors(): boolean {
+    return Object.keys(this.serverFieldErrorsSubject.value).length > 0;
   }
 
   canAddBrokerOrTenant(): boolean {

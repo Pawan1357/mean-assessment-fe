@@ -62,14 +62,14 @@ export function extractBackendErrorInfo(error: unknown): BackendErrorInfo {
       fieldErrors[`underwritingInputs.${underwritingMatch[1]}`] = msg;
     }
 
-    const brokerMatch = msg.match(/brokers\.\d+\.([a-zA-Z0-9_]+)/);
+    const brokerMatch = msg.match(/brokers\.(\d+)\.([a-zA-Z0-9_]+)/);
     if (brokerMatch) {
-      fieldErrors[`brokers.${brokerMatch[1]}`] = msg;
+      fieldErrors[`brokers.${brokerMatch[1]}.${brokerMatch[2]}`] = msg;
     }
 
-    const tenantMatch = msg.match(/tenants\.\d+\.([a-zA-Z0-9_]+)/);
+    const tenantMatch = msg.match(/tenants\.(\d+)\.([a-zA-Z0-9_]+)/);
     if (tenantMatch) {
-      fieldErrors[`tenants.${tenantMatch[1]}`] = msg;
+      fieldErrors[`tenants.${tenantMatch[1]}.${tenantMatch[2]}`] = msg;
     }
 
     if (msg.toLowerCase().includes('square footage')) {
