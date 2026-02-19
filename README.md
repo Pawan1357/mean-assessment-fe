@@ -1,71 +1,135 @@
 # Assessment Frontend (Angular)
 
-## Purpose
+## Overview
 
-Two-tab UI for the assessment (`Property Details`, `Underwriting`) with shared draft state and version-aware save workflows.
+Angular UI for the versioned property underwriting assessment.
 
-## Current Architecture
+Main goals:
 
-- `src/app/core`: API client, state store, guards, validators, models, error parsing.
-- `src/app/features/shell`: tabs, version selector, main save/save-as, top-level success/error banners.
-- `src/app/features/property-details`: property fields, broker CRUD, lease abstract view.
-- `src/app/features/underwriting`: underwriting inputs, tenant CRUD.
-- `src/app/shared`: shared Angular imports.
+- preserve cross-tab draft state
+- support main save + save-as workflows
+- support row-level broker/tenant actions
+- show backend errors clearly
 
-State management:
+## Tech Stack
 
-- `PropertyStoreService` is the single source of truth for loaded version, draft edits, dirty state, validation, and server field errors.
+- Angular 18
+- RxJS
+- Karma + Jasmine
 
-## Behavior Implemented
+## Project Structure
 
-- Shared state across tabs without losing unsaved edits.
-- Main `Save` sends one combined payload for both tabs.
-- Main `Save As` sends current form snapshot and creates next version.
-- Historical versions are read-only in UI.
-- Broker and tenant row-level create/update/delete actions.
-- Unsaved change warnings on route navigation and browser refresh/close.
-- Backend success/error messages are surfaced in UI.
+- `src/app/core`: API service, global store, validators, guard, models, error parsing
+- `src/app/features/shell`: top header, version selector, save/save-as actions, banners
+- `src/app/features/property-details`: property fields + broker table + lease abstract
+- `src/app/features/underwriting`: underwriting inputs + tenant table
+- `src/app/shared`: shared module imports
 
-## Backend Contract Used
+## How the Frontend Works
+
+State is centralized in `PropertyStoreService`.
+
+The store manages:
+
+- loaded version snapshot
+- editable draft
+- dirty state
+- client-side validation messages
+- server field-level errors
+
+Both tabs read/write the same store state, so unsaved edits persist while switching tabs.
+
+## API Contract Used
 
 Base path: `/api/properties`
 
-- `GET /:propertyId/versions`
-- `GET /:propertyId/versions/:version`
-- `PUT /:propertyId/versions/:version`
-- `POST /:propertyId/versions/:version/save-as`
-- `POST|PUT|DELETE /:propertyId/versions/:version/brokers...`
-- `POST|PUT|DELETE /:propertyId/versions/:version/tenants...`
+Version APIs:
 
-Expected response envelope:
+1. `GET /:propertyId/versions`
+2. `GET /:propertyId/versions/:version`
+3. `PUT /:propertyId/versions/:version`
+4. `POST /:propertyId/versions/:version/save-as`
+5. `GET /:propertyId/versions/:version/audit-logs`
 
-```json
-{
-  "success": true,
-  "message": "Request processed successfully",
-  "data": {}
-}
-```
+Broker APIs:
 
-## Local Run
+1. `POST /:propertyId/versions/:version/brokers?expectedRevision={n}`
+2. `PUT /:propertyId/versions/:version/brokers/:brokerId?expectedRevision={n}`
+3. `DELETE /:propertyId/versions/:version/brokers/:brokerId?expectedRevision={n}`
 
-1. Ensure backend is running on `http://localhost:3000`.
-2. `npm install`
-3. `npm start`
-4. Open `http://localhost:4200`
+Tenant APIs:
 
-API proxy:
+1. `POST /:propertyId/versions/:version/tenants?expectedRevision={n}`
+2. `PUT /:propertyId/versions/:version/tenants/:tenantId?expectedRevision={n}`
+3. `DELETE /:propertyId/versions/:version/tenants/:tenantId?expectedRevision={n}`
 
-- `src/environments/environment.ts` has `apiBaseUrl: ''`
-- `proxy.conf.json` forwards `/api` to backend
+## Frontend Flow
 
-## Testing
+### Load Flow
+
+1. Fetch version list.
+2. Auto-select latest editable version.
+3. Fetch selected version snapshot.
+4. Render Property Details and Underwriting tabs from same draft state.
+
+### Main Save Flow
+
+1. Validate draft client-side.
+2. Build one combined payload:
+   - `propertyDetails`
+   - `underwritingInputs`
+   - `brokers`
+   - `tenants`
+   - `expectedRevision`
+3. Call `PUT /versions/:version`.
+4. Replace draft with backend response and reset dirty state.
+
+### Save As Flow
+
+1. Use current draft snapshot (not forced pre-save on current version).
+2. Call `POST /versions/:version/save-as`.
+3. Backend creates next semantic version.
+4. UI reloads to returned version snapshot and refreshes version list.
+
+### Broker/Tenant Row Flow
+
+1. Add row creates client-side draft row.
+2. Row save decides create vs update using persisted identity checks.
+3. Calls broker/tenant row API with `expectedRevision`.
+4. Store merges backend row result while preserving unsaved fields in other sections.
+5. Row delete performs soft delete via backend.
+
+## Validation and UX Rules
+
+- historical versions are non-editable
+- main save/save-as disabled when no changes
+- unsaved change warning on version switch cancel/confirm
+- unsaved change warning on browser reload/close
+- vacant row cannot be edited/deleted
+- success/error banners shown at shell level
+
+## Running Locally
+
+1. Start backend first on `http://localhost:3000`.
+2. Install dependencies:
+   - `npm install`
+3. Start frontend:
+   - `npm start`
+4. Open:
+   - `http://localhost:4200`
+
+## API Proxy
+
+- `src/environments/environment.ts` uses `apiBaseUrl: ''`
+- `proxy.conf.json` forwards `/api` to `http://localhost:3000`
+
+## Testing and Build
 
 - Unit tests + coverage: `npm test`
 - Production build: `npm run build`
 
 ## Assumptions
 
-- Single-user assessment mode.
-- Auth and roles are out of scope.
-- Backend is authoritative for final validation and persistence.
+- single-user assessment mode
+- authentication and RBAC out of scope
+- backend remains source of truth for final validation and persistence
