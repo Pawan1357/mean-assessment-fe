@@ -114,7 +114,7 @@ export class PropertyStoreService {
       return throwError(() => new Error('Property not loaded'));
     }
 
-    if (this.isTempId(brokerId)) {
+    if (this.isClientOnlyBrokerId(brokerId)) {
       this.patchDraft((draft) => ({
         ...draft,
         brokers: draft.brokers.filter((broker) => broker.id !== brokerId),
@@ -151,7 +151,7 @@ export class PropertyStoreService {
       return throwError(() => new Error('Broker name, phone, email and company are required'));
     }
 
-    const request$ = this.isTempId(brokerId)
+    const request$ = this.isClientOnlyBrokerId(brokerId)
       ? this.api.createBroker(this.propertyId, current.version, current.revision, payload)
       : this.api.updateBroker(this.propertyId, current.version, brokerId, current.revision, payload);
 
@@ -214,7 +214,7 @@ export class PropertyStoreService {
       return throwError(() => new Error('Vacant row is system-managed and cannot be modified directly'));
     }
 
-    if (this.isTempId(tenantId)) {
+    if (this.isClientOnlyTenantId(tenantId)) {
       this.patchDraft((draft) => ({
         ...draft,
         tenants: draft.tenants.filter((tenant) => tenant.id !== tenantId),
@@ -264,7 +264,7 @@ export class PropertyStoreService {
       return throwError(() => new Error('Tenant name is required'));
     }
 
-    const request$ = this.isTempId(tenantId)
+    const request$ = this.isClientOnlyTenantId(tenantId)
       ? this.api.createTenant(this.propertyId, current.version, current.revision, payload)
       : this.api.updateTenant(this.propertyId, current.version, tenantId, current.revision, payload);
 
@@ -288,11 +288,12 @@ export class PropertyStoreService {
       throw new Error(validationErrors.join(' | '));
     }
 
+    const saveShape = this.materializeTransientIds(current);
     const payload = {
       expectedRevision: current.revision,
       propertyDetails: current.propertyDetails,
       underwritingInputs: current.underwritingInputs,
-      brokers: current.brokers.map((broker) => ({
+      brokers: saveShape.brokers.map((broker) => ({
         id: broker.id,
         name: broker.name,
         phone: broker.phone,
@@ -300,7 +301,7 @@ export class PropertyStoreService {
         company: broker.company,
         isDeleted: broker.isDeleted,
       })),
-      tenants: current.tenants.map((tenant) => ({
+      tenants: saveShape.tenants.map((tenant) => ({
         id: tenant.id,
         tenantName: tenant.tenantName,
         creditType: tenant.creditType,
@@ -338,11 +339,12 @@ export class PropertyStoreService {
       throw new Error('Property not loaded');
     }
 
+    const saveShape = this.materializeTransientIds(current);
     const payload = {
       expectedRevision: current.revision,
       propertyDetails: current.propertyDetails,
       underwritingInputs: current.underwritingInputs,
-      brokers: current.brokers.map((broker) => ({
+      brokers: saveShape.brokers.map((broker) => ({
         id: broker.id,
         name: broker.name,
         phone: broker.phone,
@@ -350,7 +352,7 @@ export class PropertyStoreService {
         company: broker.company,
         isDeleted: broker.isDeleted,
       })),
-      tenants: current.tenants.map((tenant) => ({
+      tenants: saveShape.tenants.map((tenant) => ({
         id: tenant.id,
         tenantName: tenant.tenantName,
         creditType: tenant.creditType,
@@ -437,7 +439,7 @@ export class PropertyStoreService {
       return false;
     }
 
-    if (this.isTempId(brokerId)) {
+    if (this.isClientOnlyBrokerId(brokerId)) {
       return true;
     }
 
@@ -475,7 +477,7 @@ export class PropertyStoreService {
       return false;
     }
 
-    if (this.isTempId(tenantId)) {
+    if (this.isClientOnlyTenantId(tenantId)) {
       return true;
     }
 
@@ -508,6 +510,20 @@ export class PropertyStoreService {
     return id.startsWith('temp-');
   }
 
+  private isClientOnlyBrokerId(id: string): boolean {
+    if (!this.isTempId(id)) {
+      return false;
+    }
+    return !this.persistedProperty?.brokers.some((broker) => broker.id === id);
+  }
+
+  private isClientOnlyTenantId(id: string): boolean {
+    if (!this.isTempId(id)) {
+      return false;
+    }
+    return !this.persistedProperty?.tenants.some((tenant) => tenant.id === id);
+  }
+
   private sanitizeBroker(broker: Broker): Omit<Broker, 'id' | 'isDeleted'> {
     return {
       name: broker.name?.trim(),
@@ -532,6 +548,37 @@ export class PropertyStoreService {
       tiPsf: tenant.tiPsf,
       lcPsf: tenant.lcPsf,
     };
+  }
+
+  private materializeTransientIds(current: PropertyVersion): Pick<PropertyVersion, 'brokers' | 'tenants'> {
+    const brokerIds = new Set(current.brokers.map((broker) => broker.id));
+    const tenantIds = new Set(current.tenants.map((tenant) => tenant.id));
+
+    const brokers = current.brokers.map((broker) => {
+      if (!this.isClientOnlyBrokerId(broker.id)) {
+        return broker;
+      }
+      let nextId = this.generateId('broker');
+      while (brokerIds.has(nextId)) {
+        nextId = this.generateId('broker');
+      }
+      brokerIds.add(nextId);
+      return { ...broker, id: nextId };
+    });
+
+    const tenants = current.tenants.map((tenant) => {
+      if (tenant.isVacant || !this.isClientOnlyTenantId(tenant.id)) {
+        return tenant;
+      }
+      let nextId = this.generateId('tenant');
+      while (tenantIds.has(nextId)) {
+        nextId = this.generateId('tenant');
+      }
+      tenantIds.add(nextId);
+      return { ...tenant, id: nextId };
+    });
+
+    return { brokers, tenants };
   }
 
   private persistCollectionUpdate(saved: PropertyVersion, collection: 'brokers' | 'tenants') {

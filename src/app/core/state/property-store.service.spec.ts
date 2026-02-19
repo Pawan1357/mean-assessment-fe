@@ -267,6 +267,53 @@ describe('PropertyStoreService', () => {
     });
   });
 
+  it('treats persisted temp-prefixed broker ids as updates, not creates', (done) => {
+    const tempPrefixed = {
+      ...baseProperty,
+      brokers: [
+        {
+          id: 'temp-broker-legacy-1',
+          name: 'Legacy Broker',
+          phone: '1234567890',
+          email: 'legacy@example.com',
+          company: 'Legacy Co',
+          isDeleted: false,
+        },
+      ],
+    } as any;
+
+    api.getVersion.and.returnValue(of(tempPrefixed));
+    api.updateBroker.and.returnValue(of({ ...tempPrefixed, revision: 3 } as any));
+
+    store.loadVersion().subscribe(() => {
+      store.updateBrokerField('temp-broker-legacy-1', 'name', 'Legacy Broker Updated');
+      store.saveBroker('temp-broker-legacy-1').subscribe(() => {
+        expect(api.updateBroker).toHaveBeenCalled();
+        expect(api.createBroker).not.toHaveBeenCalled();
+        done();
+      });
+    });
+  });
+
+  it('materializes transient ids during main save payload', (done) => {
+    api.getVersion.and.returnValue(of(baseProperty));
+    api.saveVersion.and.returnValue(of({ data: { ...baseProperty, revision: 3 }, message: 'Saved ok' } as any));
+
+    store.loadVersion().subscribe(() => {
+      store.addBrokerDraft();
+      store.addTenantDraft();
+
+      store.saveCurrent().subscribe(() => {
+        const savePayload = api.saveVersion.calls.mostRecent().args[2] as any;
+        const hasTempBrokerId = savePayload.brokers.some((broker: any) => String(broker.id).startsWith('temp-'));
+        const hasTempTenantId = savePayload.tenants.some((tenant: any) => !tenant.isVacant && String(tenant.id).startsWith('temp-'));
+        expect(hasTempBrokerId).toBeFalse();
+        expect(hasTempTenantId).toBeFalse();
+        done();
+      });
+    });
+  });
+
   it('throws when saving without loaded property', () => {
     expect(() => store.saveCurrent()).toThrowError('Property not loaded');
     expect(() => store.saveAsNextVersion()).toThrowError('Property not loaded');
